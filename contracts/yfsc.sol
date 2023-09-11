@@ -17,6 +17,15 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
+    struct Position{
+        uint tickLower;
+        uint tickUpper;
+        uint nftId;
+        uint univ3NftId;
+        uint totalLiquidity;
+        uint lastClaim;
+        uint totalClaimed;
+    }
 
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -32,7 +41,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _unpause();
     }
 
-    function safeMint(address to) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, Position memory position) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
@@ -102,7 +111,8 @@ contract YfSc{
         // of half tokens to the second pool token)
         // Store/Update UNIV3 NFT
         // Mint/update user NFT
-        // positionsNFT.safeMint(msg.sender, );
+        positionsNFT.Position position;
+        positionsNFT.safeMint(msg.sender, position);
     }
 
     /// @notice Provide liquidity to a pair pool for a specified fee
