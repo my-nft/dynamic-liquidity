@@ -11,12 +11,61 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+struct Position{
+    uint tickLower;
+    uint tickUpper;
+    uint nftId;
+    uint univ3NftId;
+    uint totalLiquidity;
+    uint lastClaim;
+    uint totalClaimed;
+}
+
+// Uniswap V3 mint params 
+struct MintParams {
+    address token0;
+    address token1;
+    uint24 fee;
+    int24 tickLower;
+    int24 tickUpper;
+    uint256 amount0Desired;
+    uint256 amount1Desired;
+    uint256 amount0Min;
+    uint256 amount1Min;
+    address recipient;
+    uint256 deadline;
+}
+
+// details about the uniswap position
+struct Univ3Position {
+    // the nonce for permits
+    uint96 nonce;
+    // the address that is approved for spending this token
+    address operator;
+    // the ID of the pool with which this token is connected
+    uint80 poolId;
+    // the tick range of the position
+    int24 tickLower;
+    int24 tickUpper;
+    // the liquidity of the position
+    uint128 liquidity;
+    // the fee growth of the aggregate position as of the last action on the individual position
+    uint256 feeGrowthInside0LastX128;
+    uint256 feeGrowthInside1LastX128;
+    // how many uncollected tokens are owed to the position, as of the last computation
+    uint128 tokensOwed0;
+    uint128 tokensOwed1;
+}
+contract UniswapV3 {
+
+}
 contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     using Counters for Counters.Counter;
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
+
 
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -32,7 +81,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _unpause();
     }
 
-    function safeMint(address to) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, Position memory position) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
@@ -74,9 +123,7 @@ contract YfSc{
     mapping(address => uint) public balances;
     mapping(address => uint) public paidBalances;
 
-    PositionsNFT positionsNFT;
-
-
+    PositionsNFT public positionsNFT;
     /**
      * Contract initialization.
      */
@@ -102,7 +149,8 @@ contract YfSc{
         // of half tokens to the second pool token)
         // Store/Update UNIV3 NFT
         // Mint/update user NFT
-        // positionsNFT.safeMint(msg.sender, );
+        Position memory position;
+        positionsNFT.safeMint(msg.sender, position);
     }
 
     /// @notice Provide liquidity to a pair pool for a specified fee

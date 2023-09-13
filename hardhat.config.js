@@ -13,7 +13,18 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 const SEPOLIA_PRIVATE_KEY = "";
 
 module.exports = {
-  solidity: "0.8.19",
+  // solidity: "0.8.19",
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.19",
+      },
+      {
+        version: "0.6.6",
+        settings: {},
+      },
+    ],
+  },
   networks: {
     sepolia: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
