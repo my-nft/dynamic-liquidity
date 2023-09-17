@@ -16,6 +16,8 @@ const linkLibraries = ({ bytecode, linkReferences }, libraries) => {
       if (!libraries.hasOwnProperty(contractName)) {
         throw new Error(`Missing link library name ${contractName}`)
       }
+    //   console.log("libraries[contractName]: ", libraries[contractName]);
+    //   console.log("contractName: ", contractName);
       const address = utils
         .getAddress(libraries[contractName])
         .toLowerCase()
@@ -38,21 +40,28 @@ const linkLibraries = ({ bytecode, linkReferences }, libraries) => {
 async function main() {
   const [owner] = await ethers.getSigners();
 
-  console.log("owner: ", owner);
+//   console.log("owner: ", [owner]);
 
   let Weth = new ContractFactory(artifacts.WETH9.abi, artifacts.WETH9.bytecode, owner);
-  console.log("Weth: ", Weth);
   let weth = await Weth.deploy();
-  console.log("weth: ", weth);
+
+//   console.log("weth: ", weth);
 
   Factory = new ContractFactory(artifacts.UniswapV3Factory.abi, artifacts.UniswapV3Factory.bytecode, owner);
   factory = await Factory.deploy();
-
+  console.log("weth.address: ", weth);
+  console.log("factory.address: ", factory);
+  console.log("factory.deployed: ", factory.target);
+//   console.log("factory.deployed: ", factory.deployed());
+  
   SwapRouter = new ContractFactory(artifacts.SwapRouter.abi, artifacts.SwapRouter.bytecode, owner);
-  swapRouter = await SwapRouter.deploy(factory.address, weth.address);
+  swapRouter = await SwapRouter.deploy(factory.target, weth.target);
+//   console.log("swapRouter: ", swapRouter);
 
   NFTDescriptor = new ContractFactory(artifacts.NFTDescriptor.abi, artifacts.NFTDescriptor.bytecode, owner);
   nftDescriptor = await NFTDescriptor.deploy();
+
+//   console.log("nftDescriptor: ", nftDescriptor);
 
   const linkedBytecode = linkLibraries(
     {
@@ -72,19 +81,20 @@ async function main() {
       NFTDescriptor: nftDescriptor.address,
     }
   );
+  console.log("")
 
   NonfungibleTokenPositionDescriptor = new ContractFactory(artifacts.NonfungibleTokenPositionDescriptor.abi, linkedBytecode, owner);
-  nonfungibleTokenPositionDescriptor = await NonfungibleTokenPositionDescriptor.deploy(weth.address);
+  nonfungibleTokenPositionDescriptor = await NonfungibleTokenPositionDescriptor.deploy(weth.target);
 
   NonfungiblePositionManager = new ContractFactory(artifacts.NonfungiblePositionManager.abi, artifacts.NonfungiblePositionManager.bytecode, owner);
-  nonfungiblePositionManager = await NonfungiblePositionManager.deploy(factory.address, weth.address, nonfungibleTokenPositionDescriptor.address);
+  nonfungiblePositionManager = await NonfungiblePositionManager.deploy(factory.target, weth.target, nonfungibleTokenPositionDescriptor.target);
 
-  console.log('WETH_ADDRESS=', `'${weth.address}'`)
-  console.log('FACTORY_ADDRESS=', `'${factory.address}'`)
-  console.log('SWAP_ROUTER_ADDRESS=', `'${swapRouter.address}'`)
-  console.log('NFT_DESCRIPTOR_ADDRESS=', `'${nftDescriptor.address}'`)
-  console.log('POSITION_DESCRIPTOR_ADDRESS=', `'${nonfungibleTokenPositionDescriptor.address}'`)
-  console.log('POSITION_MANAGER_ADDRESS=', `'${nonfungiblePositionManager.address}'`)
+  console.log('WETH_ADDRESS=', `'${weth.target}'`)
+  console.log('FACTORY_ADDRESS=', `'${factory.target}'`)
+  console.log('SWAP_ROUTER_ADDRESS=', `'${swapRouter.target}'`)
+  console.log('NFT_DESCRIPTOR_ADDRESS=', `'${nftDescriptor.target}'`)
+  console.log('POSITION_DESCRIPTOR_ADDRESS=', `'${nonfungibleTokenPositionDescriptor.target}'`)
+  console.log('POSITION_MANAGER_ADDRESS=', `'${nonfungiblePositionManager.target}'`)
 }
 
 /*
