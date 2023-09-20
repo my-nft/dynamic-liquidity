@@ -196,7 +196,7 @@ contract YfSc{
     uint _amount0, 
     uint _amount1, 
     uint _amount0Min, 
-    uint _amount1Min, 
+    uint _amount1Min,
     uint deadline) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
@@ -205,21 +205,20 @@ contract YfSc{
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         MintParams memory mintParams;
-        mintParams = MintParams(_token0, _token1, _fee, _tickLower, _tickUpper, _amount0, _amount1, _amount0Min, _amount1Min, msg.sender, deadline);
-        // mintParams = ({token0: _token0,
-        //               token0: _token1, 
-        //               fee: _fee,
-        //               tickLower: _tickLower,
-        //               tickUpper: _tickUpper,
-        //               amount0Desired: _amount0,
-        //               amount1Desired: _amount1,
-        //               amount0Min: _amount0Min,
-        //               amount1Min: _amount1Min,
-        //               recipient: msg.sender,
-        //               deadline: deadline,
-        //               });
+        mintParams = MintParams(_token0, 
+                                _token1, 
+                                _fee, 
+                                _tickLower, 
+                                _tickUpper, 
+                                _amount0, 
+                                _amount1, 
+                                _amount0Min, 
+                                _amount1Min, 
+                                address(this), 
+                                deadline);
+ 
         nonfungiblePositionManager.mint(mintParams);
-
+        mintParams.recipient = msg.sender;
         positionsNFT.safeMint(mintParams);
     }
 
