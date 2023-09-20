@@ -54,7 +54,7 @@ async function main() {
 
   const poolData = await getPoolData(poolContract)
 
-  const TETHER_ADDRESS = "0x6b66b855bD702987E4aAe8372718963Ab1454681";
+  // const TETHER_ADDRESS = "0x6b66b855bD702987E4aAe8372718963Ab1454681";
 
 //   0x1c86faF10D95f15e4392362B2b1AA1dD3d07130A
 

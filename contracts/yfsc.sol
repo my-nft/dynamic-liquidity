@@ -6,20 +6,21 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-struct Position{
-    uint tickLower;
-    uint tickUpper;
-    uint nftId;
-    uint univ3NftId;
-    uint totalLiquidity;
-    uint lastClaim;
-    uint totalClaimed;
-}
+// struct Position{
+//     uint tickLower;
+//     uint tickUpper;
+//     uint nftId;
+//     uint univ3NftId;
+//     uint totalLiquidity;
+//     uint lastClaim;
+//     uint totalClaimed;
+// }
 
 // Uniswap V3 mint params 
 struct MintParams {
@@ -56,7 +57,7 @@ struct Univ3Position {
     uint128 tokensOwed0;
     uint128 tokensOwed1;
 }
-contract UniswapV3 {
+contract Token is ERC20 ("Test Token", "TT"){
 
 }
 contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
@@ -66,6 +67,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
 
+    mapping(uint => MintParams) mintParams;
 
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -81,10 +83,11 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _unpause();
     }
 
-    function safeMint(address to, Position memory position) public onlyRole(MINTER_ROLE) {
+    function safeMint(MintParams memory _mintParams) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+        _safeMint(_mintParams.recipient, tokenId);
+        mintParams[tokenId] = _mintParams;
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
@@ -107,6 +110,35 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     }
 }
 
+contract NonfungiblePositionManager {
+    
+    // struct MintParams {
+    //     address token0;
+    //     address token1;
+    //     uint24 fee;
+    //     int24 tickLower;
+    //     int24 tickUpper;
+    //     uint256 amount0Desired;
+    //     uint256 amount1Desired;
+    //     uint256 amount0Min;
+    //     uint256 amount1Min;
+    //     address recipient;
+    //     uint256 deadline;
+    // }
+    function mint(MintParams calldata params)
+        external
+        payable
+        // override
+        // checkDeadline(params.deadline)
+        returns (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        ){}
+
+}
+
 /// @title YF SC : dynamic liquidity for uniswap V3
 /// @author zak_ch
 /// @notice Serves to track users liquidity and allocate fees
@@ -123,15 +155,23 @@ contract YfSc{
     mapping(address => uint) public balances;
     mapping(address => uint) public paidBalances;
 
+    mapping(uint => address) positionsOwners;
+
+    mapping(address => uint) public userPositionsCount;
+ 
+    uint positionsCounter;
+
     PositionsNFT public positionsNFT;
+    NonfungiblePositionManager public nonfungiblePositionManager;
     /**
      * Contract initialization.
      */
 
     /// @notice Deploys the smart 
     /// @dev Assigns `msg.sender` to the owner state variable
-    constructor(PositionsNFT _positionsNFT) {
+    constructor(PositionsNFT _positionsNFT, NonfungiblePositionManager _nonfungiblePositionManager) {
         positionsNFT = _positionsNFT;
+        nonfungiblePositionManager = _nonfungiblePositionManager;
         owner = msg.sender;
     }
 
@@ -140,17 +180,47 @@ contract YfSc{
     /// @param _token0 The first token of the liquidity pool pair
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
-    /// @param _tokenToDeposit 0 for _token0, 1 for _token1
-    /// @param _amount The amount of tokens `account` will receive
-    function mintNFT(address _token0, address _token1, uint _fee, uint _tokenToDeposit, uint _amount) public {
-        // check if pair/fee exists otherwise revert
-        // transfer _tokenToDeposit from user's walet to YfSc
-        // and provide liqudity (suppose uniswap handles the swap 
-        // of half tokens to the second pool token)
-        // Store/Update UNIV3 NFT
-        // Mint/update user NFT
-        Position memory position;
-        positionsNFT.safeMint(msg.sender, position);
+    /// @param _tickLower 0 for _token0, 1 for _token1
+    /// @param _tickUpper 0 for _token0, 1 for _token1
+    /// @param _amount0 0 for _token0, 1 for _token1
+    /// @param _amount1 0 for _token0, 1 for _token1
+    /// @param _amount0Min 0 for _token0, 1 for _token1
+    /// @param _amount1Min 0 for _token0, 1 for _token1
+    /// @param deadline 0 for _token0, 1 for _token1
+    function mintNFT(
+    address _token0, 
+    address _token1, 
+    uint24 _fee, 
+    int24 _tickLower, 
+    int24 _tickUpper, 
+    uint _amount0, 
+    uint _amount1, 
+    uint _amount0Min, 
+    uint _amount1Min, 
+    uint deadline) public {
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
+        token0.transferFrom(msg.sender, address(this), _amount0);
+        token1.transferFrom(msg.sender, address(this), _amount1);
+        token0.approve(address(nonfungiblePositionManager), _amount0);
+        token1.approve(address(nonfungiblePositionManager), _amount1);
+        MintParams memory mintParams;
+        mintParams = MintParams(_token0, _token1, _fee, _tickLower, _tickUpper, _amount0, _amount1, _amount0Min, _amount1Min, msg.sender, deadline);
+        // mintParams = ({token0: _token0,
+        //               token0: _token1, 
+        //               fee: _fee,
+        //               tickLower: _tickLower,
+        //               tickUpper: _tickUpper,
+        //               amount0Desired: _amount0,
+        //               amount1Desired: _amount1,
+        //               amount0Min: _amount0Min,
+        //               amount1Min: _amount1Min,
+        //               recipient: msg.sender,
+        //               deadline: deadline,
+        //               });
+        nonfungiblePositionManager.mint(mintParams);
+
+        positionsNFT.safeMint(mintParams);
     }
 
     /// @notice Provide liquidity to a pair pool for a specified fee
@@ -159,6 +229,7 @@ contract YfSc{
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
     /// @param _amount The amount of tokens `account` will receive
+    /// @param _tokenToDeposit The amount of tokens `account` will receive
     function provideLiquidityToUniswap(address _token0, address _token1, uint _fee, uint _tokenToDeposit, uint _amount) internal {
         
     }
