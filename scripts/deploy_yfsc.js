@@ -59,31 +59,41 @@ async function main() {
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
-    // "-887220", 
-    // "887220", 
     "1459866916952", 
     "100000000000", 
-    // "0", 
-    // "0", 
-    // deadline.toString(),
     { gasLimit: '1000000' }
   )
   await tx2.wait()
+
+  let tokenId = await YfScContract.tokenId();
+  let liquidity = await YfScContract.liquidity();
+  let amount0 = await YfScContract.amount0();
+  let amount1 = await YfScContract.amount1();
+
+  console.log("tokenId: ", tokenId);
+  console.log("liquidity: ", liquidity);
+  console.log("amount0: ", amount0);
+  console.log("amount1: ", amount1);
 
   const tx3 = await YfScContract.connect(signer2).mintNFT(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
-    // "-887220", 
-    // "887220", 
-    "1459866916952", 
-    "100000000000", 
-    // "0", 
-    // "0", 
-    // deadline.toString(),
+    "14598669169", 
+    "1000000000", 
     { gasLimit: '1000000' }
   )
   await tx3.wait()
+
+  tokenId = await YfScContract.tokenId();
+  liquidity = await YfScContract.liquidity();
+  amount0 = await YfScContract.amount0();
+  amount1 = await YfScContract.amount1();
+
+  console.log("tokenId 2: ", tokenId);
+  console.log("liquidity 2: ", liquidity);
+  console.log("amount0 2: ", amount0);
+  console.log("amount1 2: ", amount1);
 
   console.log("done!")
 }

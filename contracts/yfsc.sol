@@ -142,8 +142,8 @@ contract YfSc{
 
     uint public deadline = 600;
 
+    uint public slippageToken0 = 500; // => 5 %
     uint public slippageToken1 = 500; // => 5 %
-    uint public slippageToken2 = 500; // => 5 %
 
     uint public quotient = 10000; 
 
@@ -152,6 +152,11 @@ contract YfSc{
 
     PositionsNFT public positionsNFT;
     NonfungiblePositionManager public nonfungiblePositionManager;
+
+    uint256 public tokenId;
+    uint128 public liquidity;
+    uint256 public amount0;
+    uint256 public amount1;
     /**
      * Contract initialization.
      */
@@ -162,6 +167,32 @@ contract YfSc{
         positionsNFT = _positionsNFT;
         nonfungiblePositionManager = _nonfungiblePositionManager;
         owner = msg.sender;
+    }
+
+    // Modifier to check that the caller is the owner of
+    // the contract.
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        // Underscore is a special character only used inside
+        // a function modifier and it tells Solidity to
+        // execute the rest of the code.
+        _;
+    }
+
+    function setTickLower(int24 _tickLower) public onlyOwner{
+        tickLower = _tickLower;
+    }
+
+    function setTickUpper(int24 _tickUpper) public onlyOwner{
+        tickUpper = _tickUpper;
+    }
+
+    function setSilppageToken0(uint _slippageToken0) public onlyOwner{
+        slippageToken0 = _slippageToken0;
+    }
+
+    function setSilppageToken1(uint _slippageToken1) public onlyOwner{
+        slippageToken1 = _slippageToken1;
     }
 
     /// @notice Allow user to deposit liquidity and mint corresponding NFT
@@ -175,13 +206,8 @@ contract YfSc{
     address _token0, 
     address _token1, 
     uint24 _fee, 
-    // int24 _tickLower, 
-    // int24 _tickUpper, 
     uint _amount0, 
     uint _amount1
-    // uint _amount0Min, 
-    // uint _amount1Min,
-    // uint deadline
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
@@ -190,8 +216,8 @@ contract YfSc{
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         MintParams memory mintParams;
-        uint _amount0Min = 0;//_amount0 * slippageToken1 / quotient;
-        uint _amount1Min = 0;//_amount1 * slippageToken1 / quotient;
+        uint _amount0Min = _amount0 - _amount0 * slippageToken0 / quotient;
+        uint _amount1Min =_amount1- _amount1 * slippageToken1 / quotient;
         mintParams = MintParams(_token0, 
                                 _token1, 
                                 _fee, 
@@ -202,10 +228,15 @@ contract YfSc{
                                 _amount0Min, 
                                 _amount1Min, 
                                 address(this), 
-                                2342342342334234//block.timestamp + deadline
+                                block.timestamp + deadline
                                 );
  
-        nonfungiblePositionManager.mint(mintParams);
+        (
+            tokenId,
+            liquidity,
+            amount0,
+            amount1
+        ) = nonfungiblePositionManager.mint(mintParams);
         mintParams.recipient = msg.sender;
         positionsNFT.safeMint(mintParams);
     }
