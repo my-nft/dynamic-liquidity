@@ -12,15 +12,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-// struct Position{
-//     uint tickLower;
-//     uint tickUpper;
-//     uint nftId;
-//     uint univ3NftId;
-//     uint totalLiquidity;
-//     uint lastClaim;
-//     uint totalClaimed;
-// }
 
 // Uniswap V3 mint params 
 struct MintParams {
@@ -111,20 +102,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
 }
 
 contract NonfungiblePositionManager {
-    
-    // struct MintParams {
-    //     address token0;
-    //     address token1;
-    //     uint24 fee;
-    //     int24 tickLower;
-    //     int24 tickUpper;
-    //     uint256 amount0Desired;
-    //     uint256 amount1Desired;
-    //     uint256 amount0Min;
-    //     uint256 amount1Min;
-    //     address recipient;
-    //     uint256 deadline;
-    // }
+
     function mint(MintParams calldata params)
         external
         payable
@@ -158,8 +136,19 @@ contract YfSc{
     mapping(uint => address) positionsOwners;
 
     mapping(address => uint) public userPositionsCount;
+
+    int24 public tickLower = -887220;
+    int24 public tickUpper = 887220;
+
+    uint public deadline = 600;
+
+    uint public slippageToken1 = 500; // => 5 %
+    uint public slippageToken2 = 500; // => 5 %
+
+    uint public quotient = 10000; 
+
  
-    uint positionsCounter;
+    uint public positionsCounter;
 
     PositionsNFT public positionsNFT;
     NonfungiblePositionManager public nonfungiblePositionManager;
@@ -180,24 +169,20 @@ contract YfSc{
     /// @param _token0 The first token of the liquidity pool pair
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
-    /// @param _tickLower 0 for _token0, 1 for _token1
-    /// @param _tickUpper 0 for _token0, 1 for _token1
     /// @param _amount0 0 for _token0, 1 for _token1
     /// @param _amount1 0 for _token0, 1 for _token1
-    /// @param _amount0Min 0 for _token0, 1 for _token1
-    /// @param _amount1Min 0 for _token0, 1 for _token1
-    /// @param deadline 0 for _token0, 1 for _token1
     function mintNFT(
     address _token0, 
     address _token1, 
     uint24 _fee, 
-    int24 _tickLower, 
-    int24 _tickUpper, 
+    // int24 _tickLower, 
+    // int24 _tickUpper, 
     uint _amount0, 
-    uint _amount1, 
-    uint _amount0Min, 
-    uint _amount1Min,
-    uint deadline) public {
+    uint _amount1
+    // uint _amount0Min, 
+    // uint _amount1Min,
+    // uint deadline
+    ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
         token0.transferFrom(msg.sender, address(this), _amount0);
@@ -205,22 +190,27 @@ contract YfSc{
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         MintParams memory mintParams;
+        uint _amount0Min = 0;//_amount0 * slippageToken1 / quotient;
+        uint _amount1Min = 0;//_amount1 * slippageToken1 / quotient;
         mintParams = MintParams(_token0, 
                                 _token1, 
                                 _fee, 
-                                _tickLower, 
-                                _tickUpper, 
+                                tickLower, 
+                                tickUpper, 
                                 _amount0, 
                                 _amount1, 
                                 _amount0Min, 
                                 _amount1Min, 
                                 address(this), 
-                                deadline);
+                                2342342342334234//block.timestamp + deadline
+                                );
  
         nonfungiblePositionManager.mint(mintParams);
         mintParams.recipient = msg.sender;
         positionsNFT.safeMint(mintParams);
     }
+
+    // rebalance --> burn nft and create new one for new position 
 
     /// @notice Provide liquidity to a pair pool for a specified fee
     /// @dev Internal function, called by mintNFT function

@@ -28,7 +28,14 @@ module.exports = {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       chainId: 5,
-      accounts: [SEPOLIA_PRIVATE_KEY]
+      accounts: [SEPOLIA_PRIVATE_KEY],
+      // gasPrice: 20000,
     }
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: "EN61ZAFUFED9F6NPYJJXP75M6SPJN8DC74"
   }
+  
 };

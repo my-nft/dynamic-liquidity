@@ -25,12 +25,12 @@ async function main() {
   PositionsNFTContract = new ContractFactory(artifacts.PositionsNFT.abi, artifacts.PositionsNFT.bytecode, signer2);
   PositionsNFTContract = await PositionsNFTContract.deploy();
 
-//   console.log("PositionsNFTContract: ", PositionsNFTContract);
+  console.log("PositionsNFTContract: ", PositionsNFTContract);
 
   YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2);
   YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS);
 
-//   console.log("YfScContract: ", YfScContract);
+  console.log("YfScContract: ", YfScContract);
 
   const wethContract = new Contract(WETH_ADDRESS,artifacts.WETH.abi,provider)
   const uniContract = new Contract(UNI_ADDRESS,artifacts.UNI.abi,provider)
@@ -40,21 +40,8 @@ async function main() {
 
 //   const poolContract = new Contract(USDT_USDC_500, artifacts.UniswapV3Pool.abi, provider)
   let deadline = Math.floor(Date.now() / 1000) + (60 * 10); 
-//   console.log("deadline: ", deadline);
+  console.log("deadline: ", deadline);
 //   console.log("deadline.toString(): ", deadline.toString());
-  params = {
-    token0: UNI_ADDRESS,
-    token1: WETH_ADDRESS,
-    fee: "3000",
-    tickLower: "-887220",
-    tickUpper: "887220",
-    amount0Desired: "14598669169527361",
-    amount1Desired: "1000000000000000",
-    amount0Min: "0",
-    amount1Min: "0",
-    recipient: signer2.address,
-    deadline: deadline.toString()
-  }
 
 //   const nonfungiblePositionManager = new Contract(
 //     POSITION_MANAGER_ADDRESS,
@@ -69,20 +56,34 @@ async function main() {
   await tx.wait()
 
   const tx2 = await YfScContract.connect(signer2).mintNFT(
-    // params,
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
-    "-887220", 
-    "887220", 
-    "145986691695273", 
-    "10000000000000", 
-    "0", 
-    "0", 
-    deadline.toString(),
+    // "-887220", 
+    // "887220", 
+    "1459866916952", 
+    "100000000000", 
+    // "0", 
+    // "0", 
+    // deadline.toString(),
     { gasLimit: '1000000' }
   )
   await tx2.wait()
+
+  const tx3 = await YfScContract.connect(signer2).mintNFT(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    // "-887220", 
+    // "887220", 
+    "1459866916952", 
+    "100000000000", 
+    // "0", 
+    // "0", 
+    // deadline.toString(),
+    { gasLimit: '1000000' }
+  )
+  await tx3.wait()
 
   console.log("done!")
 }
