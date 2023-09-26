@@ -65,15 +65,15 @@ async function main() {
   )
   await tx2.wait()
 
-  let tokenId = await YfScContract.tokenId();
-  let liquidity = await YfScContract.liquidity();
-  let amount0 = await YfScContract.amount0();
-  let amount1 = await YfScContract.amount1();
+//   let tokenId = await YfScContract.tokenId();
+//   let liquidity = await YfScContract.liquidity();
+//   let amount0 = await YfScContract.amount0();
+//   let amount1 = await YfScContract.amount1();
 
-  console.log("tokenId: ", tokenId);
-  console.log("liquidity: ", liquidity);
-  console.log("amount0: ", amount0);
-  console.log("amount1: ", amount1);
+//   console.log("tokenId: ", tokenId);
+//   console.log("liquidity: ", liquidity);
+//   console.log("amount0: ", amount0);
+//   console.log("amount1: ", amount1);
 
   const tx3 = await YfScContract.connect(signer2).mintNFT(
     UNI_ADDRESS, 
@@ -85,15 +85,29 @@ async function main() {
   )
   await tx3.wait()
 
-  tokenId = await YfScContract.tokenId();
-  liquidity = await YfScContract.liquidity();
-  amount0 = await YfScContract.amount0();
-  amount1 = await YfScContract.amount1();
+//   tokenId = await YfScContract.tokenId();
+//   liquidity = await YfScContract.liquidity();
+//   amount0 = await YfScContract.amount0();
+//   amount1 = await YfScContract.amount1();
+
+//   console.log("tokenId 2: ", tokenId);
+//   console.log("liquidity 2: ", liquidity);
+//   console.log("amount0 2: ", amount0);
+//   console.log("amount1 2: ", amount1);
+
+//   params = {
+//     token0: UNI_ADDRESS,
+//     token1: WETH_ADDRESS,
+//     fee: "3000"
+//   }
+
+  tokenId = await YfScContract.poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000");
+
+  console.log("tokenId: ", tokenId);
+
+  tokenId = await YfScContract.poolNftIds(WETH_ADDRESS, UNI_ADDRESS, "3000");
 
   console.log("tokenId 2: ", tokenId);
-  console.log("liquidity 2: ", liquidity);
-  console.log("amount0 2: ", amount0);
-  console.log("amount1 2: ", amount1);
 
   console.log("done!")
 }
