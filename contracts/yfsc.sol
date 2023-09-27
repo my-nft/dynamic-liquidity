@@ -6,33 +6,41 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-struct Position{
-    uint tickLower;
-    uint tickUpper;
-    uint nftId;
-    uint univ3NftId;
-    uint totalLiquidity;
-    uint lastClaim;
-    uint totalClaimed;
-}
+import "hardhat/console.sol";
 
-// Uniswap V3 mint params 
-struct MintParams {
-    address token0;
-    address token1;
-    uint24 fee;
-    int24 tickLower;
-    int24 tickUpper;
+struct IncreaseLiquidityParams {
+    uint256 tokenId;
     uint256 amount0Desired;
     uint256 amount1Desired;
     uint256 amount0Min;
     uint256 amount1Min;
-    address recipient;
+    uint256 deadline;
+}
+
+// Uniswap V3 mint params 
+// struct MintParams {
+//     uint24 uni3NftId;
+//     address user;
+//     uint totalLiquidity;
+// }
+
+struct MintParams {
+    address token0;
+    address token1; 
+    uint24 fee;
+    int24 tickLower; 
+    int24 tickUpper; 
+    uint256 amount0;
+    uint256 amount1; 
+    uint256 amount0Min; 
+    uint256 amount1Min; 
+    address receiver; 
     uint256 deadline;
 }
 
@@ -56,7 +64,7 @@ struct Univ3Position {
     uint128 tokensOwed0;
     uint128 tokensOwed1;
 }
-contract UniswapV3 {
+contract Token is ERC20 ("Test Token", "TT"){
 
 }
 contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
@@ -66,7 +74,8 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
 
-
+    mapping(address => mapping(uint=>uint)) public userNftPerPool;
+    mapping(uint => mapping(uint=>uint)) liquidityForUserInPool;
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
@@ -81,11 +90,19 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _unpause();
     }
 
-    function safeMint(address to, Position memory position) public onlyRole(MINTER_ROLE) {
+    function safeMint(uint uniswapNftId, address receiver, uint liquidity) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+        _safeMint(receiver, tokenId);
+        userNftPerPool[receiver][uniswapNftId] = tokenId;
+        liquidityForUserInPool[uniswapNftId][tokenId] = liquidity;
     }
+
+
+    // function updateLiquidityForUser(uint uniswapNftId, uint positionNftId) public onlyRole(MINTER_ROLE) {
+       
+    //     liquidityForUserInPool[uniswapNftId][positionNftId] = liquidityForUserInPool[uniswapNftId][positionNftId] + liquidity;
+    // }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
@@ -107,6 +124,32 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     }
 }
 
+contract NonfungiblePositionManager {
+
+    function mint(MintParams calldata params)
+        external
+        payable
+        // override
+        // checkDeadline(params.deadline)
+        returns (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        ){}
+    
+    function increaseLiquidity(IncreaseLiquidityParams calldata params)
+        external
+        payable
+        // override
+        // checkDeadline(params.deadline)
+        returns (
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        ){}
+}
+
 /// @title YF SC : dynamic liquidity for uniswap V3
 /// @author zak_ch
 /// @notice Serves to track users liquidity and allocate fees
@@ -123,16 +166,147 @@ contract YfSc{
     mapping(address => uint) public balances;
     mapping(address => uint) public paidBalances;
 
+    mapping(uint => address) positionsOwners;
+
+    mapping(address => uint) public userPositionsCount;
+
+    int24 public tickLower = -887220;
+    int24 public tickUpper = 887220;
+
+    uint public deadline = 600;
+
+    uint public slippageToken0 = 10000; // => 5 %
+    uint public slippageToken1 = 10000; // => 5 %
+
+    uint public quotient = 10000; 
+
+    uint public positionsCounter;
+
     PositionsNFT public positionsNFT;
+    NonfungiblePositionManager public nonfungiblePositionManager;
+
+    mapping(uint => uint) public totalLiquidity;
+
+    mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds;// [token0][token1][fee] = nftId
+
+
+    address public test_token0;
+    address public test_token1; 
+    uint public test_fee;
+    int24 public test_tickLower; 
+    int24 public test_tickUpper; 
+    uint public test_amount0;
+    uint public test_amount1; 
+    uint public test_amount0Min; 
+    uint public test_amount1Min; 
+    address public test_receiver; 
+    uint public test_deadline;
+
     /**
      * Contract initialization.
      */
 
     /// @notice Deploys the smart 
     /// @dev Assigns `msg.sender` to the owner state variable
-    constructor(PositionsNFT _positionsNFT) {
+    constructor(PositionsNFT _positionsNFT, NonfungiblePositionManager _nonfungiblePositionManager) {
         positionsNFT = _positionsNFT;
+        nonfungiblePositionManager = _nonfungiblePositionManager;
         owner = msg.sender;
+    }
+
+    // Modifier to check that the caller is the owner of
+    // the contract.
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        // Underscore is a special character only used inside
+        // a function modifier and it tells Solidity to
+        // execute the rest of the code.
+        _;
+    }
+
+    function setTickLower(int24 _tickLower) public onlyOwner{
+        tickLower = _tickLower;
+    }
+
+    function setTickUpper(int24 _tickUpper) public onlyOwner{
+        tickUpper = _tickUpper;
+    }
+
+    function setSilppageToken0(uint _slippageToken0) public onlyOwner{
+        slippageToken0 = _slippageToken0;
+    }
+
+    function setSilppageToken1(uint _slippageToken1) public onlyOwner{
+        slippageToken1 = _slippageToken1;
+    }
+
+    function mintUni3Nft(
+                            address _token0, 
+                            address _token1, 
+                            uint24 _fee, 
+                            int24 _tickLower, 
+                            int24 _tickUpper, 
+                            uint _amount0, 
+                            uint _amount1, 
+                            uint _amount0Min, 
+                            uint _amount1Min
+                        ) internal {
+            MintParams memory mintParams;
+            mintParams = MintParams(
+                        _token0, 
+                        _token1, 
+                        _fee, 
+                        _tickLower, 
+                        _tickUpper, 
+                        _amount0, 
+                        _amount1, 
+                        _amount0Min, 
+                        _amount1Min, 
+                        address(this), 
+                        block.timestamp + deadline 
+                        );
+
+            test_token0 = _token0;
+            test_token1 = _token1; 
+            test_fee = _fee;
+            test_tickLower = _tickLower; 
+            test_tickUpper = _tickUpper; 
+            test_amount0 = _amount0;
+            test_amount1 = _amount1; 
+            test_amount0Min = _amount0Min; 
+            test_amount1Min = _amount1Min; 
+            test_receiver = address(this); 
+            test_deadline = block.timestamp + deadline;
+
+            (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
+
+            poolNftIds[_token0][_token1][_fee] = tokenId;
+
+            poolNftIds[_token1][_token0][_fee] = tokenId;
+            positionsNFT.safeMint(tokenId, msg.sender, liquidity);
+    }
+
+    function increaseUni3Nft(
+                                address _token0, 
+                                address _token1, 
+                                uint _fee, 
+                                uint _amount0, 
+                                uint _amount1, 
+                                uint _amount0Min, 
+                                uint _amount1Min) 
+                            internal{
+        IncreaseLiquidityParams memory increaseLiquidityParams;
+
+        uint tokenId = poolNftIds[_token0][_token1][_fee] > 0 ? poolNftIds[_token0][_token1][_fee] : poolNftIds[_token1][_token0][_fee];
+        
+        increaseLiquidityParams = IncreaseLiquidityParams(
+                    tokenId, 
+                    _amount0, 
+                    _amount1, 
+                    _amount0Min, 
+                    _amount1Min, 
+                    block.timestamp + deadline ); 
+        (uint128 liquidity,,) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
     }
 
     /// @notice Allow user to deposit liquidity and mint corresponding NFT
@@ -140,18 +314,57 @@ contract YfSc{
     /// @param _token0 The first token of the liquidity pool pair
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
-    /// @param _tokenToDeposit 0 for _token0, 1 for _token1
-    /// @param _amount The amount of tokens `account` will receive
-    function mintNFT(address _token0, address _token1, uint _fee, uint _tokenToDeposit, uint _amount) public {
-        // check if pair/fee exists otherwise revert
-        // transfer _tokenToDeposit from user's walet to YfSc
-        // and provide liqudity (suppose uniswap handles the swap 
-        // of half tokens to the second pool token)
-        // Store/Update UNIV3 NFT
-        // Mint/update user NFT
-        Position memory position;
-        positionsNFT.safeMint(msg.sender, position);
+    /// @param _amount0 0 for _token0, 1 for _token1
+    /// @param _amount1 0 for _token0, 1 for _token1
+    function mintNFT(
+    address _token0, 
+    address _token1, 
+    uint24 _fee, 
+    uint _amount0, 
+    uint _amount1
+    ) public {
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
+        token0.transferFrom(msg.sender, address(this), _amount0);
+        token1.transferFrom(msg.sender, address(this), _amount1);
+        token0.approve(address(nonfungiblePositionManager), _amount0);
+        token1.approve(address(nonfungiblePositionManager), _amount1);
+        
+        uint _amount0Min = _amount0 - _amount0 * slippageToken0 / quotient;
+        uint _amount1Min = _amount1- _amount1 * slippageToken1 / quotient;
+        console.log("before testing");
+        if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
+        {
+            // console.log("minting", poolNftIds[_token0][_token1][_fee], _token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+            // console.log("minting");
+            // MintParams memory mintParams;
+            // mintParams = MintParams(
+            //             _token0, 
+            //             _token1, 
+            //             _fee, 
+            //             tickLower, 
+            //             tickUpper, 
+            //             _amount0, 
+            //             _amount1, 
+            //             _amount0Min, 
+            //             _amount1Min, 
+            //             address(this), 
+            //             block.timestamp + deadline 
+            //             );
+
+            // (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
+
+
+            mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+        }else{
+            // console.log("increasing", _token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
+            console.log("increasing");
+
+            increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
+        }        
     }
+
+    // rebalance --> burn nft and create new one for new position 
 
     /// @notice Provide liquidity to a pair pool for a specified fee
     /// @dev Internal function, called by mintNFT function
@@ -159,6 +372,7 @@ contract YfSc{
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
     /// @param _amount The amount of tokens `account` will receive
+    /// @param _tokenToDeposit The amount of tokens `account` will receive
     function provideLiquidityToUniswap(address _token0, address _token1, uint _fee, uint _tokenToDeposit, uint _amount) internal {
         
     }
