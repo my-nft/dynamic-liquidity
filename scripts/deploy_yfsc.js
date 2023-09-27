@@ -75,15 +75,15 @@ async function main() {
 //   console.log("amount0: ", amount0);
 //   console.log("amount1: ", amount1);
 
-//   const tx3 = await YfScContract.connect(signer2).mintNFT(
-//     UNI_ADDRESS, 
-//     WETH_ADDRESS, 
-//     "3000", 
-//     "14598669169", 
-//     "1000000000", 
-//     { gasLimit: '1000000' }
-//   )
-//   await tx3.wait()
+  const tx3 = await YfScContract.connect(signer2).mintNFT(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "14598669169", 
+    "1000000000", 
+    { gasLimit: '1000000' }
+  )
+  await tx3.wait()
 
 //   tokenId = await YfScContract.tokenId();
 //   liquidity = await YfScContract.liquidity();
@@ -102,30 +102,6 @@ async function main() {
 //   }
 
   tokenId = await YfScContract.poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000");
-
-  test_token0 = await YfScContract.test_token0();
-  test_token1 = await YfScContract.test_token1(); 
-  test_fee = await YfScContract.test_fee();
-  test_tickLower = await YfScContract.test_tickLower(); 
-  test_tickUpper = await YfScContract.test_tickUpper(); 
-  test_amount0 = await YfScContract.test_amount0();
-  test_amount1 = await YfScContract.test_amount1(); 
-  test_amount0Min = await YfScContract.test_amount0Min(); 
-  test_amount1Min = await YfScContract.test_amount1Min(); 
-  test_receiver = await YfScContract.test_receiver(); 
-  test_deadline = await YfScContract.test_deadline(); 
-
-  console.log("test_token0: ", test_token0);
-  console.log("test_token1: ", test_token1);
-  console.log("test_fee: ", test_fee);
-  console.log("test_tickLower: ", test_tickLower);
-  console.log("test_tickUpper: ", test_tickUpper);
-  console.log("test_amount0: ", test_amount0);
-  console.log("test_amount1: ", test_amount1);
-  console.log("test_amount0Min: ", test_amount0Min);
-  console.log("test_amount1Min: ", test_amount1Min);
-  console.log("test_receiver: ", test_receiver);
-  console.log("test_deadline: ", test_deadline);
 
 //   tokenId = await YfScContract.poolNftIds(WETH_ADDRESS, UNI_ADDRESS, "3000");
 
