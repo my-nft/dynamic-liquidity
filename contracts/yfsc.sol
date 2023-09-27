@@ -75,11 +75,14 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     Counters.Counter private _tokenIdCounter;
 
     mapping(address => mapping(uint=>uint)) public userNftPerPool;
-    mapping(uint => mapping(uint=>uint)) liquidityForUserInPool;
+
+    mapping(uint=>uint) liquidityForUserInPool; // nft --> liquidity 
+
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
+        _tokenIdCounter.increment(); // to start from 1
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -95,14 +98,18 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _tokenIdCounter.increment();
         _safeMint(receiver, tokenId);
         userNftPerPool[receiver][uniswapNftId] = tokenId;
-        liquidityForUserInPool[uniswapNftId][tokenId] = liquidity;
+        liquidityForUserInPool[tokenId] = liquidity;
+    }
+
+    function getUserNftPerPool(address receiver, uint uniswapNftId) view public returns (uint) {
+        return userNftPerPool[receiver][uniswapNftId];
     }
 
 
-    // function updateLiquidityForUser(uint uniswapNftId, uint positionNftId) public onlyRole(MINTER_ROLE) {
+    function updateLiquidityForUser(uint positionNftId, uint liquidity)public onlyRole(MINTER_ROLE) {
        
-    //     liquidityForUserInPool[uniswapNftId][positionNftId] = liquidityForUserInPool[uniswapNftId][positionNftId] + liquidity;
-    // }
+        liquidityForUserInPool[positionNftId] = liquidityForUserInPool[positionNftId] + liquidity;
+    }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
@@ -175,8 +182,8 @@ contract YfSc{
 
     uint public deadline = 600;
 
-    uint public slippageToken0 = 10000; // => 5 %
-    uint public slippageToken1 = 10000; // => 5 %
+    uint public slippageToken0 = 500; // => 5 %
+    uint public slippageToken1 = 500; // => 5 %
 
     uint public quotient = 10000; 
 
@@ -188,19 +195,6 @@ contract YfSc{
     mapping(uint => uint) public totalLiquidity;
 
     mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds;// [token0][token1][fee] = nftId
-
-
-    address public test_token0;
-    address public test_token1; 
-    uint public test_fee;
-    int24 public test_tickLower; 
-    int24 public test_tickUpper; 
-    uint public test_amount0;
-    uint public test_amount1; 
-    uint public test_amount0Min; 
-    uint public test_amount1Min; 
-    address public test_receiver; 
-    uint public test_deadline;
 
     /**
      * Contract initialization.
@@ -266,18 +260,6 @@ contract YfSc{
                         block.timestamp + deadline 
                         );
 
-            test_token0 = _token0;
-            test_token1 = _token1; 
-            test_fee = _fee;
-            test_tickLower = _tickLower; 
-            test_tickUpper = _tickUpper; 
-            test_amount0 = _amount0;
-            test_amount1 = _amount1; 
-            test_amount0Min = _amount0Min; 
-            test_amount1Min = _amount1Min; 
-            test_receiver = address(this); 
-            test_deadline = block.timestamp + deadline;
-
             (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
 
             poolNftIds[_token0][_token1][_fee] = tokenId;
@@ -307,6 +289,13 @@ contract YfSc{
                     _amount1Min, 
                     block.timestamp + deadline ); 
         (uint128 liquidity,,) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
+
+        if(positionsNFT.getUserNftPerPool(msg.sender, tokenId) == 0){
+            positionsNFT.safeMint(tokenId, msg.sender, liquidity);
+        }else{
+            positionsNFT.updateLiquidityForUser(positionsNFT.getUserNftPerPool(msg.sender, tokenId), liquidity);
+        }
+
     }
 
     /// @notice Allow user to deposit liquidity and mint corresponding NFT
