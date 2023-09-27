@@ -12,6 +12,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+import "hardhat/console.sol";
+
 struct IncreaseLiquidityParams {
     uint256 tokenId;
     uint256 amount0Desired;
@@ -31,15 +33,15 @@ struct IncreaseLiquidityParams {
 struct MintParams {
     address token0;
     address token1; 
-    uint fee;
+    uint24 fee;
     int24 tickLower; 
     int24 tickUpper; 
-    uint amount0;
-    uint amount1; 
-    uint amount0Min; 
-    uint amount1Min; 
+    uint256 amount0;
+    uint256 amount1; 
+    uint256 amount0Min; 
+    uint256 amount1Min; 
     address receiver; 
-    uint deadline;
+    uint256 deadline;
 }
 
 // details about the uniswap position
@@ -187,6 +189,19 @@ contract YfSc{
 
     mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds;// [token0][token1][fee] = nftId
 
+
+    address public test_token0;
+    address public test_token1; 
+    uint public test_fee;
+    int24 public test_tickLower; 
+    int24 public test_tickUpper; 
+    uint public test_amount0;
+    uint public test_amount1; 
+    uint public test_amount0Min; 
+    uint public test_amount1Min; 
+    address public test_receiver; 
+    uint public test_deadline;
+
     /**
      * Contract initialization.
      */
@@ -228,7 +243,7 @@ contract YfSc{
     function mintUni3Nft(
                             address _token0, 
                             address _token1, 
-                            uint _fee, 
+                            uint24 _fee, 
                             int24 _tickLower, 
                             int24 _tickUpper, 
                             uint _amount0, 
@@ -249,13 +264,21 @@ contract YfSc{
                         _amount1Min, 
                         address(this), 
                         block.timestamp + deadline 
-                        ); 
-            (
-                uint256 tokenId,
-                uint128 liquidity,
-                uint256 amount0,
-                uint256 amount1
-            ) = nonfungiblePositionManager.mint(mintParams);
+                        );
+
+            test_token0 = _token0;
+            test_token1 = _token1; 
+            test_fee = _fee;
+            test_tickLower = _tickLower; 
+            test_tickUpper = _tickUpper; 
+            test_amount0 = _amount0;
+            test_amount1 = _amount1; 
+            test_amount0Min = _amount0Min; 
+            test_amount1Min = _amount1Min; 
+            test_receiver = address(this); 
+            test_deadline = block.timestamp + deadline;
+
+            (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
 
             poolNftIds[_token0][_token1][_fee] = tokenId;
 
@@ -270,8 +293,7 @@ contract YfSc{
                                 uint _amount0, 
                                 uint _amount1, 
                                 uint _amount0Min, 
-                                uint _amount1Min
-                            ) 
+                                uint _amount1Min) 
                             internal{
         IncreaseLiquidityParams memory increaseLiquidityParams;
 
@@ -283,13 +305,8 @@ contract YfSc{
                     _amount1, 
                     _amount0Min, 
                     _amount1Min, 
-                    block.timestamp + deadline 
-                    ); 
-        (
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        ) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
+                    block.timestamp + deadline ); 
+        (uint128 liquidity,,) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
     }
 
     /// @notice Allow user to deposit liquidity and mint corresponding NFT
@@ -315,10 +332,34 @@ contract YfSc{
         
         uint _amount0Min = _amount0 - _amount0 * slippageToken0 / quotient;
         uint _amount1Min = _amount1- _amount1 * slippageToken1 / quotient;
-        if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0 && false)
+        console.log("before testing");
+        if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
+            // console.log("minting", poolNftIds[_token0][_token1][_fee], _token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+            // console.log("minting");
+            // MintParams memory mintParams;
+            // mintParams = MintParams(
+            //             _token0, 
+            //             _token1, 
+            //             _fee, 
+            //             tickLower, 
+            //             tickUpper, 
+            //             _amount0, 
+            //             _amount1, 
+            //             _amount0Min, 
+            //             _amount1Min, 
+            //             address(this), 
+            //             block.timestamp + deadline 
+            //             );
+
+            // (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
+
+
             mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
         }else{
+            // console.log("increasing", _token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
+            console.log("increasing");
+
             increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }        
     }
