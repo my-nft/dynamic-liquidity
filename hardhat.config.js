@@ -10,8 +10,11 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 // To export your private key from Metamask, open Metamask and
 // go to Account Details > Export Private Key
 // Beware: NEVER put real Ether into testing accounts
+// const SEPOLIA_PRIVATE_KEY2 = "";
 const SEPOLIA_PRIVATE_KEY2 = "";
-const SEPOLIA_PRIVATE_KEY = ""
+
+const SEPOLIA_PRIVATE_KEY = "";
+// const SEPOLIA_PRIVATE_KEY = "";
 
 module.exports = {
   solidity: {
@@ -37,27 +40,7 @@ module.exports = {
       }
     ]
   },
-  // solidity: {
-  //   compilers: [
-  //     {
-  //       version: "0.8.19",
-  //       viaIR: true,
-  //       // settings: {
-  //       //   viaIR: true,
-  //       // },
-  //       optimizer: {
-  //         enabled: true,
-  //         runs: 2000,
-  //       },
-  //     },
-  //     {
-  //       version: "0.6.6",
-  //       // settings: {
-  //       //   viaIR: true,
-  //       // },
-  //     },
-  //   ],
-  // },
+  defaultNetwork: "goerli",
   networks: {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,

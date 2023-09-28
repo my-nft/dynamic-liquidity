@@ -12,14 +12,19 @@ const artifacts = {
   PositionsNFT: require("../artifacts/contracts/yfsc.sol/PositionsNFT.json"),
 };
 
-// const { ethers } = require("hardhat")
+const { ethers } = require("hardhat")
 
 const { Contract, ContractFactory, utils, BigNumber  } = require("ethers")
 // const { Contract} = require("ethers")
 
 async function main() {
-  const signer2 = await ethers.getSigners();
-  console.log("signer:", signer2[0]);
+  const [signer1, signer2] = await ethers.getSigners();
+//   const {owner1, owner2} = await getNamedAccounts();
+//   console.log("owner1", owner1);
+//   console.log("owner2", owner2);
+//   const [signer2] = await ethers.getSigners();
+  console.log("signer:", signer2);
+  console.log("signer1:", signer1);
   const provider = ethers.provider
 
   PositionsNFTContract = new ContractFactory(artifacts.PositionsNFT.abi, artifacts.PositionsNFT.bytecode, signer2[0]);
@@ -27,7 +32,7 @@ async function main() {
 
 //   console.log("PositionsNFTContract: ", PositionsNFTContract);
 
-  YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2[0]);
+  YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2);
   YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS);
 
 //   console.log("YfScContract: ", YfScContract);
@@ -35,8 +40,8 @@ async function main() {
   const wethContract = new Contract(WETH_ADDRESS,artifacts.WETH.abi,provider)
   const uniContract = new Contract(UNI_ADDRESS,artifacts.UNI.abi,provider)
 
-  await wethContract.connect(signer2[0]).approve(YfScContract.target, ethers.parseEther("1000"))
-  await uniContract.connect(signer2[0]).approve(YfScContract.target, ethers.parseEther("1000"))
+  await wethContract.connect(signer2).approve(YfScContract.target, ethers.parseEther("1000"))
+  await uniContract.connect(signer2).approve(YfScContract.target, ethers.parseEther("1000"))
 
 //   const poolContract = new Contract(USDT_USDC_500, artifacts.UniswapV3Pool.abi, provider)
   let deadline = Math.floor(Date.now() / 1000) + (60 * 10); 
@@ -49,13 +54,13 @@ async function main() {
 //     provider
 //   )
 
-  const tx = await PositionsNFTContract.connect(signer2[0]).grantRole(
+  const tx = await PositionsNFTContract.connect(signer2).grantRole(
     MINTER_ROLE, YfScContract.target,
     { gasLimit: '1000000' }
   )
   await tx.wait()
 
-  const tx2 = await YfScContract.connect(signer2[0]).mintNFT(
+  const tx2 = await YfScContract.connect(signer2).mintNFT(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
@@ -75,7 +80,7 @@ async function main() {
 //   console.log("amount0: ", amount0);
 //   console.log("amount1: ", amount1);
 
-  const tx3 = await YfScContract.connect(signer2[0]).mintNFT(
+  const tx3 = await YfScContract.connect(signer1).mintNFT(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
