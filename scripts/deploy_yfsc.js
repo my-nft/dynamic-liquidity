@@ -18,13 +18,13 @@ const { Contract, ContractFactory, utils, BigNumber  } = require("ethers")
 // const { Contract} = require("ethers")
 
 async function main() {
-  const [signer1, signer2] = await ethers.getSigners();
+//   const [signer1, signer2] = await ethers.getSigners();
 //   const {owner1, owner2} = await getNamedAccounts();
 //   console.log("owner1", owner1);
 //   console.log("owner2", owner2);
-//   const [signer2] = await ethers.getSigners();
-  console.log("signer:", signer2);
-  console.log("signer1:", signer1);
+  const [signer2] = await ethers.getSigners();
+//   console.log("signer:", signer2);
+//   console.log("signer1:", signer1);
   const provider = ethers.provider
 
   PositionsNFTContract = new ContractFactory(artifacts.PositionsNFT.abi, artifacts.PositionsNFT.bytecode, signer2[0]);
@@ -80,7 +80,7 @@ async function main() {
 //   console.log("amount0: ", amount0);
 //   console.log("amount1: ", amount1);
 
-  const tx3 = await YfScContract.connect(signer1).mintNFT(
+  const tx3 = await YfScContract.connect(signer2).mintNFT(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 

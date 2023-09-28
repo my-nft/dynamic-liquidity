@@ -13,7 +13,7 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 // const SEPOLIA_PRIVATE_KEY2 = "";
 const SEPOLIA_PRIVATE_KEY2 = "";
 
-const SEPOLIA_PRIVATE_KEY = "";
+// const SEPOLIA_PRIVATE_KEY = "";
 // const SEPOLIA_PRIVATE_KEY = "";
 
 module.exports = {
@@ -45,7 +45,7 @@ module.exports = {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       chainId: 5,
-      accounts: [SEPOLIA_PRIVATE_KEY, SEPOLIA_PRIVATE_KEY2],
+      accounts: [SEPOLIA_PRIVATE_KEY2],
       // gasPrice: 20000,
     }
   },

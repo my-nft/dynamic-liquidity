@@ -44,26 +44,34 @@ struct MintParams {
     uint256 deadline;
 }
 
-// details about the uniswap position
-struct Univ3Position {
-    // the nonce for permits
-    uint96 nonce;
-    // the address that is approved for spending this token
-    address operator;
-    // the ID of the pool with which this token is connected
-    uint80 poolId;
-    // the tick range of the position
-    int24 tickLower;
-    int24 tickUpper;
-    // the liquidity of the position
+struct DecreaseLiquidityParams {
+    uint256 tokenId;
     uint128 liquidity;
-    // the fee growth of the aggregate position as of the last action on the individual position
-    uint256 feeGrowthInside0LastX128;
-    uint256 feeGrowthInside1LastX128;
-    // how many uncollected tokens are owed to the position, as of the last computation
-    uint128 tokensOwed0;
-    uint128 tokensOwed1;
+    uint256 amount0Min;
+    uint256 amount1Min;
+    uint256 deadline;
 }
+
+// details about the uniswap position
+// struct Univ3Position {
+//     // the nonce for permits
+//     uint96 nonce;
+//     // the address that is approved for spending this token
+//     address operator;
+//     // the ID of the pool with which this token is connected
+//     uint80 poolId;
+//     // the tick range of the position
+//     int24 tickLower;
+//     int24 tickUpper;
+//     // the liquidity of the position
+//     uint128 liquidity;
+//     // the fee growth of the aggregate position as of the last action on the individual position
+//     uint256 feeGrowthInside0LastX128;
+//     uint256 feeGrowthInside1LastX128;
+//     // how many uncollected tokens are owed to the position, as of the last computation
+//     uint128 tokensOwed0;
+//     uint128 tokensOwed1;
+// }
 contract Token is ERC20 ("Test Token", "TT"){
 
 }
@@ -76,7 +84,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
 
     mapping(address => mapping(uint=>uint)) public userNftPerPool;
 
-    mapping(uint=>uint) liquidityForUserInPool; // nft --> liquidity 
+    mapping(uint=>uint128) public liquidityForUserInPool; // nft --> liquidity 
 
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -93,7 +101,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _unpause();
     }
 
-    function safeMint(uint uniswapNftId, address receiver, uint liquidity) public onlyRole(MINTER_ROLE) {
+    function safeMint(uint uniswapNftId, address receiver, uint128 liquidity) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(receiver, tokenId);
@@ -106,7 +114,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     }
 
 
-    function updateLiquidityForUser(uint positionNftId, uint liquidity)public onlyRole(MINTER_ROLE) {
+    function updateLiquidityForUser(uint positionNftId, uint128 liquidity)public onlyRole(MINTER_ROLE) {
        
         liquidityForUserInPool[positionNftId] = liquidityForUserInPool[positionNftId] + liquidity;
     }
@@ -155,6 +163,14 @@ contract NonfungiblePositionManager {
             uint256 amount0,
             uint256 amount1
         ){}
+
+    function decreaseLiquidity(DecreaseLiquidityParams calldata params)
+        external
+        payable
+        // override
+        // isAuthorizedForToken(params.tokenId)
+        // checkDeadline(params.deadline)
+        returns (uint256 amount0, uint256 amount1){}
 }
 
 /// @title YF SC : dynamic liquidity for uniswap V3
@@ -277,10 +293,11 @@ contract YfSc{
                                 uint _amount0Min, 
                                 uint _amount1Min) 
                             internal{
-        IncreaseLiquidityParams memory increaseLiquidityParams;
+        // IncreaseLiquidityParams memory increaseLiquidityParams;
 
         uint tokenId = poolNftIds[_token0][_token1][_fee] > 0 ? poolNftIds[_token0][_token1][_fee] : poolNftIds[_token1][_token0][_fee];
         
+        IncreaseLiquidityParams memory increaseLiquidityParams;
         increaseLiquidityParams = IncreaseLiquidityParams(
                     tokenId, 
                     _amount0, 
@@ -295,7 +312,6 @@ contract YfSc{
         }else{
             positionsNFT.updateLiquidityForUser(positionsNFT.getUserNftPerPool(msg.sender, tokenId), liquidity);
         }
-
     }
 
     /// @notice Allow user to deposit liquidity and mint corresponding NFT
@@ -324,26 +340,6 @@ contract YfSc{
         console.log("before testing");
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
-            // console.log("minting", poolNftIds[_token0][_token1][_fee], _token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
-            // console.log("minting");
-            // MintParams memory mintParams;
-            // mintParams = MintParams(
-            //             _token0, 
-            //             _token1, 
-            //             _fee, 
-            //             tickLower, 
-            //             tickUpper, 
-            //             _amount0, 
-            //             _amount1, 
-            //             _amount0Min, 
-            //             _amount1Min, 
-            //             address(this), 
-            //             block.timestamp + deadline 
-            //             );
-
-            // (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
-
-
             mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
         }else{
             // console.log("increasing", _token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
@@ -351,6 +347,27 @@ contract YfSc{
 
             increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }        
+    }
+
+    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage) public {
+        uint _poolNftId = poolNftIds[_token0][_token1][_fee];
+        uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _poolNftId);
+
+        uint128 _userLiquidity = positionsNFT.liquidityForUserInPool(_userNftId);
+
+        uint128 _liquidityToRemove = _userLiquidity * _purcentage / 100;
+
+        uint _amount0Min = 0;
+        uint _amount1Min = 0;
+ 
+        DecreaseLiquidityParams memory decreaseLiquidityParams;
+        decreaseLiquidityParams = DecreaseLiquidityParams(
+                    _poolNftId, 
+                    _liquidityToRemove, 
+                    _amount0Min, 
+                    _amount1Min, 
+                    block.timestamp + deadline ); 
+        nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
     }
 
     // rebalance --> burn nft and create new one for new position 
