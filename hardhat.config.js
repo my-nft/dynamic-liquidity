@@ -13,9 +13,6 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 // const SEPOLIA_PRIVATE_KEY2 = "";
 const SEPOLIA_PRIVATE_KEY2 = "";
 
-// const SEPOLIA_PRIVATE_KEY = "";
-// const SEPOLIA_PRIVATE_KEY = "";
-
 module.exports = {
   solidity: {
     compilers: [
