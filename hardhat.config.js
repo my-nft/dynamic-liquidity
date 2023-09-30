@@ -10,7 +10,7 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 // To export your private key from Metamask, open Metamask and
 // go to Account Details > Export Private Key
 // Beware: NEVER put real Ether into testing accounts
-// const SEPOLIA_PRIVATE_KEY2 = "";
+const SEPOLIA_PRIVATE_KEY = "";
 const SEPOLIA_PRIVATE_KEY2 = "";
 
 module.exports = {
@@ -42,7 +42,7 @@ module.exports = {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       chainId: 5,
-      accounts: [SEPOLIA_PRIVATE_KEY2],
+      accounts: [SEPOLIA_PRIVATE_KEY, SEPOLIA_PRIVATE_KEY2],
       // gasPrice: 20000,
     }
   },

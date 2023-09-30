@@ -220,7 +220,7 @@ contract YfSc{
 
     uint public quotient = 10000; 
 
-    uint public max_collect = "1000000000000000000000000000000";
+    uint128 public max_collect = 1e27;
 
     uint public positionsCounter;
 
@@ -234,6 +234,7 @@ contract YfSc{
     mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds;// [token0][token1][fee] = nftId
 
     mapping(address => uint) public tokensBalances;
+    mapping(address => uint) public totalRewards;
     mapping(address => uint) public paidRewards;
 
 
@@ -405,24 +406,35 @@ contract YfSc{
                     block.timestamp + deadline ); 
         nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
 
-        totalLiquidity[_poolNftId] = totalLiquidity[_poolNftId] - liquidity;
+        totalLiquidity[_poolNftId] = totalLiquidity[_poolNftId] - _liquidityToRemove;
     }
 
     function collect(address _token0, address _token1, uint _fee) public {
-
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
-
         CollectParams memory collectParams;
-        uint oldBalanceToken0 = tokensBalances[_token0];
-        uint oldBalanceToken1 = tokensBalances[_token1];
+
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
+
+        uint oldBalanceToken0 = token0.balanceOf(address(this));
+        uint oldBalanceToken1 = token1.balanceOf(address(this));
         collectParams = CollectParams(
                     _poolNftId, 
                     address(this), 
                     max_collect, 
                     max_collect); 
         nonfungiblePositionManager.collect(collectParams);
-        uint newBalanceToken0 = tokensBalances[_token0];
-        uint newBalanceToken1 = tokensBalances[_token1];
+
+        uint newBalanceToken0 = token0.balanceOf(address(this));
+        uint newBalanceToken1 = token1.balanceOf(address(this));
+
+        uint new_reward0 = newBalanceToken0 - oldBalanceToken0;
+        uint new_reward1 = newBalanceToken1 - oldBalanceToken1;
+
+        totalRewards[_token0] = totalRewards[_token0] + new_reward0;
+
+        totalRewards[_token1] = totalRewards[_token1] + new_reward1;
+
     }
 
     // rebalance --> burn nft and create new one for new position 
