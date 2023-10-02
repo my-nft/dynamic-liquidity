@@ -231,11 +231,27 @@ contract YfSc{
 
     mapping(uint => uint) public totalLiquidity;
 
-    mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds;// [token0][token1][fee] = nftId
+    mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds; // [token0][token1][fee] = Original nft Id
+    mapping(uint => uint) public updatedlNftId; // to keep track of the position after nft id change in case of change of ticks (remove and add liquidity)
 
     mapping(address => uint) public tokensBalances;
     mapping(address => uint) public totalRewards;
     mapping(address => uint) public paidRewards;
+
+    uint public public_nft_id;
+    uint public public_liquidityToRemove;
+    uint public public_amount0Min;
+    uint public public_amount1Min;
+    uint public public_deadline; 
+
+    uint public public_balance0Before;
+    uint public public_balance1Before;
+
+    uint public public_balance0After;
+    uint public public_balance1After;
+
+    uint public public_update_position_balance0;
+    uint public public_update_position_balance1;
 
 
     /**
@@ -260,24 +276,53 @@ contract YfSc{
         _;
     }
 
-    function setTickLower(int24 _tickLower) public onlyOwner{
+    function setTicks(int24 _tickLower, int24 _tickUpper) public onlyOwner{
         tickLower = _tickLower;
-    }
-
-    function setTickUpper(int24 _tickUpper) public onlyOwner{
         tickUpper = _tickUpper;
     }
 
-    function setSilppageToken0(uint _slippageToken0) public onlyOwner{
+    function setSilppageToken0(uint _slippageToken0, uint _slippageToken1) public onlyOwner{
         slippageToken0 = _slippageToken0;
-    }
-
-    function setSilppageToken1(uint _slippageToken1) public onlyOwner{
         slippageToken1 = _slippageToken1;
     }
 
     function setLockTime(uint _liquidityLockTime) public onlyOwner{
         liquidityLockTime = _liquidityLockTime;
+    }
+
+    // you will need to update the ticks first before calling this methods
+    function updatePosition(address _token0, address _token1, uint24 _fee) external onlyOwner {
+
+        tickLower = 3000;
+        tickUpper = -3000;
+
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
+
+        uint oldBalanceToken0 = token0.balanceOf(address(this));
+        uint oldBalanceToken1 = token1.balanceOf(address(this));
+
+        decreaseLiquidity(_token0, _token1, _fee, 100);
+
+        uint newBalanceToken0 = token0.balanceOf(address(this));
+        uint newBalanceToken1 = token1.balanceOf(address(this));
+
+        uint balance0 = newBalanceToken0 - oldBalanceToken0;
+        uint balance1 = newBalanceToken1 - oldBalanceToken1;
+
+        public_update_position_balance0 = balance0;
+        public_update_position_balance1 = balance1;
+
+        poolNftIds[_token0][_token1][_fee] = 0;
+
+        // mintNFT(
+        //     _token0, 
+        //     _token1, 
+        //     _fee, 
+        //     balance0, 
+        //     balance1
+        // );
+
     }
 
     function mintUni3Nft(
@@ -311,6 +356,8 @@ contract YfSc{
             poolNftIds[_token0][_token1][_fee] = tokenId;
 
             poolNftIds[_token1][_token0][_fee] = tokenId;
+
+            updatedlNftId[tokenId] = tokenId;
             positionsNFT.safeMint(tokenId, msg.sender, liquidity);
 
             totalLiquidity[tokenId] = liquidity; 
@@ -332,7 +379,7 @@ contract YfSc{
         
         IncreaseLiquidityParams memory increaseLiquidityParams;
         increaseLiquidityParams = IncreaseLiquidityParams(
-                    tokenId, 
+                    updatedlNftId[tokenId], 
                     _amount0, 
                     _amount1, 
                     _amount0Min, 
@@ -340,12 +387,12 @@ contract YfSc{
                     block.timestamp + deadline ); 
         (uint128 liquidity,,) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
 
-        totalLiquidity[tokenId] = totalLiquidity[tokenId] + liquidity;
+        totalLiquidity[updatedlNftId[tokenId]] = totalLiquidity[updatedlNftId[tokenId]] + liquidity;
 
-        if(positionsNFT.getUserNftPerPool(msg.sender, tokenId) == 0){
+        if(positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[tokenId]) == 0){
             positionsNFT.safeMint(tokenId, msg.sender, liquidity);
         }else{
-            positionsNFT.updateLiquidityForUser(positionsNFT.getUserNftPerPool(msg.sender, tokenId), liquidity);
+            positionsNFT.updateLiquidityForUser(positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[tokenId]), liquidity);
         }
     }
 
@@ -385,32 +432,46 @@ contract YfSc{
     }
 
     function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage) public {
-        
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
-        uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _poolNftId);
+        uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[_poolNftId]);
         require(positionsNFT.liquidityLastDepositTime(_userNftId) < block.timestamp + liquidityLockTime, "liquidity locked !");
-
-        uint128 _userLiquidity = positionsNFT.liquidityForUserInPool(_userNftId);
+        uint userNft = positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[_poolNftId]);
+        uint128 _userLiquidity = positionsNFT.liquidityForUserInPool(userNft);
 
         uint128 _liquidityToRemove = _userLiquidity * _purcentage / 100;
 
-        uint _amount0Min = 0;
-        uint _amount1Min = 0;
- 
+        uint _amount0Min = 0; // maybe integrate slippage later
+        uint _amount1Min = 0; // maybe integrate slippage later 
+
         DecreaseLiquidityParams memory decreaseLiquidityParams;
         decreaseLiquidityParams = DecreaseLiquidityParams(
-                    _poolNftId, 
+                    updatedlNftId[_poolNftId], 
                     _liquidityToRemove, 
                     _amount0Min, 
                     _amount1Min, 
                     block.timestamp + deadline ); 
-        nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
 
-        totalLiquidity[_poolNftId] = totalLiquidity[_poolNftId] - _liquidityToRemove;
+        public_nft_id = userNft;
+        public_liquidityToRemove = _liquidityToRemove;
+        public_amount0Min = _amount0Min;
+        public_amount1Min = _amount1Min;
+        public_deadline = block.timestamp + deadline; 
+
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
+
+        public_balance0Before = token0.balanceOf(address(this));
+        public_balance1Before = token1.balanceOf(address(this));
+
+        nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
+        public_balance0After = token0.balanceOf(address(this));
+        public_balance1After = token1.balanceOf(address(this));
+
+        totalLiquidity[updatedlNftId[_poolNftId]] = totalLiquidity[updatedlNftId[_poolNftId]] - _liquidityToRemove;
     }
 
     function collect(address _token0, address _token1, uint _fee) public {
-        uint _poolNftId = poolNftIds[_token0][_token1][_fee];
+        uint _poolNftId = poolNftIds[_token0][_token1][_fee]; // get first pool nft id 
         CollectParams memory collectParams;
 
         ERC20 token0 = ERC20(_token0);
@@ -419,7 +480,7 @@ contract YfSc{
         uint oldBalanceToken0 = token0.balanceOf(address(this));
         uint oldBalanceToken1 = token1.balanceOf(address(this));
         collectParams = CollectParams(
-                    _poolNftId, 
+                    updatedlNftId[_poolNftId], 
                     address(this), 
                     max_collect, 
                     max_collect); 
@@ -434,7 +495,6 @@ contract YfSc{
         totalRewards[_token0] = totalRewards[_token0] + new_reward0;
 
         totalRewards[_token1] = totalRewards[_token1] + new_reward1;
-
     }
 
     // rebalance --> burn nft and create new one for new position 
