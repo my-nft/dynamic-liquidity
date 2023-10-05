@@ -72,15 +72,15 @@ async function main() {
 //   )
 //   await tx3.wait()
 
-// const tx4 = await YfScContract.connect(signer2[0]).decreaseLiquidity(
-//     UNI_ADDRESS, 
-//     WETH_ADDRESS, 
-//     "3000", 
-//     "100", 
-//     { gasLimit: '1000000' }
-//   )
-//   await tx4.wait()
-//   console.log("decrease liquidity validated: ", tx4);
+  // const tx4 = await YfScContract.connect(signer2[0]).decreaseLiquidity(
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "50", 
+  //   { gasLimit: '1000000' }
+  // )
+  // await tx4.wait()
+  // console.log("decrease liquidity validated: ", tx4);
 
   const tx5 = await YfScContract.connect(signer2[0]).updatePosition(
     UNI_ADDRESS, 
@@ -89,7 +89,48 @@ async function main() {
     { gasLimit: '1000000' }
   )
   await tx5.wait()
+  console.log("update liquidity position: ", tx5);
+
+  // const tx5 = await YfScContract.connect(signer2[0]).decreaseLiquidity(
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "40", 
+  //   { gasLimit: '1000000' }
+  // )
+  // await tx5.wait()
+  // console.log("decrease liquidity validated: ", tx5);
+
+  // const tx6 = await YfScContract.connect(signer2[0]).decreaseLiquidity(
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "10", 
+  //   { gasLimit: '1000000' }
+  // )
+  // await tx6.wait()
+  // console.log("decrease liquidity validated: ", tx6);
+
+  // const tx5 = await YfScContract.connect(signer2[0]).sweepToken(
+  //   UNI_ADDRESS, 
+  //   "300000000", 
+  //   "100x80520E99aDD46c642052Ca5B476a1Dd40dB973B00", 
+  //   { gasLimit: '1000000' }
+  // )
+  // await tx5.wait()
+  // console.log("sweep token success: ", tx5);
+
+//   const tx5 = await YfScContract.connect(signer2[0]).updatePosition(
+//     UNI_ADDRESS, 
+//     WETH_ADDRESS, 
+//     "3000",
+//     { gasLimit: '1000000' }
+//   )
+//   await tx5.wait()
 //   console.log("decrease liquidity validated: ", tx5);
+
+// lock liquidity uniquement for users to withdraw 
+// calculer la deuxieme valeur a partir de la premiere valeur 
 
   const tokenId = await YfScContract.public_nft_id();
   const public_liquidityToRemove = await YfScContract.public_liquidityToRemove();
@@ -119,6 +160,22 @@ async function main() {
   
   console.log("public_update_position_balance0:", public_update_position_balance0);
   console.log("public_update_position_balance1:", public_update_position_balance1);
+
+  // const liquidity_before = await YfScContract.liquidity_before();
+  // const tokensOwed0_before = await YfScContract.tokensOwed0_before();
+  // const tokensOwed1_before = await YfScContract.tokensOwed1_before();
+
+  // const liquidity_after = await YfScContract.liquidity_after();
+  // const tokensOwed0_after = await YfScContract.tokensOwed0_after();
+  // const tokensOwed1_after = await YfScContract.tokensOwed1_after();
+
+  // console.log("liquidity_before:", liquidity_before);
+  // console.log("tokensOwed0_before:", tokensOwed0_before);
+  // console.log("tokensOwed1_before:", tokensOwed1_before);
+  // console.log("liquidity_after:", liquidity_after);
+  // console.log("tokensOwed0_after:", tokensOwed0_after);
+  // console.log("tokensOwed1_after:", tokensOwed1_after);
+
   
   console.log("done!")
 }

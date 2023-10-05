@@ -188,6 +188,32 @@ contract NonfungiblePositionManager {
         // override
         // isAuthorizedForToken(params.tokenId)
         returns (uint256 amount0, uint256 amount1){}
+
+    function sweepToken(
+        address token,
+        uint256 amountMinimum,
+        address recipient
+    ) external payable {}
+
+    function positions(uint256 tokenId)
+        external
+        view
+        // override
+        returns (
+            uint96 nonce,
+            address operator,
+            address token0,
+            address token1,
+            uint24 fee,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
+        )
+    {}
 }
 
 /// @title YF SC : dynamic liquidity for uniswap V3
@@ -253,6 +279,15 @@ contract YfSc{
     uint public public_update_position_balance0;
     uint public public_update_position_balance1;
 
+    uint128 public liquidity_before;
+    uint128 public liquidity_after;
+
+    uint128 public tokensOwed0_before;
+    uint128 public tokensOwed1_before;
+
+    uint128 public tokensOwed0_after;
+    uint128 public tokensOwed1_after;
+
 
     /**
      * Contract initialization.
@@ -293,8 +328,8 @@ contract YfSc{
     // you will need to update the ticks first before calling this methods
     function updatePosition(address _token0, address _token1, uint24 _fee) external onlyOwner {
 
-        tickLower = 3000;
-        tickUpper = -3000;
+        tickLower = -300000;
+        tickUpper = 300000;
 
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
@@ -322,6 +357,13 @@ contract YfSc{
         //     balance0, 
         //     balance1
         // );
+        mintNFT(
+            _token0, 
+            _token1, 
+            _fee, 
+            newBalanceToken0, 
+            newBalanceToken1
+        );
 
     }
 
@@ -443,13 +485,18 @@ contract YfSc{
         uint _amount0Min = 0; // maybe integrate slippage later
         uint _amount1Min = 0; // maybe integrate slippage later 
 
+        (,,,,,,,liquidity_before,,,
+            tokensOwed0_before,
+            tokensOwed1_before
+        ) = nonfungiblePositionManager.positions(updatedlNftId[_poolNftId]);
+
         DecreaseLiquidityParams memory decreaseLiquidityParams;
         decreaseLiquidityParams = DecreaseLiquidityParams(
                     updatedlNftId[_poolNftId], 
                     _liquidityToRemove, 
                     _amount0Min, 
                     _amount1Min, 
-                    block.timestamp + deadline ); 
+                    block.timestamp + deadline); 
 
         public_nft_id = userNft;
         public_liquidityToRemove = _liquidityToRemove;
@@ -464,10 +511,20 @@ contract YfSc{
         public_balance1Before = token1.balanceOf(address(this));
 
         nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
+        (,,,,,,,liquidity_after,,,
+            tokensOwed0_after,
+            tokensOwed1_after
+        ) = nonfungiblePositionManager.positions(updatedlNftId[_poolNftId]);
+
+        collect(_token0, _token1, _fee);
         public_balance0After = token0.balanceOf(address(this));
         public_balance1After = token1.balanceOf(address(this));
 
         totalLiquidity[updatedlNftId[_poolNftId]] = totalLiquidity[updatedlNftId[_poolNftId]] - _liquidityToRemove;
+    }
+
+    function sweepToken(address _token, uint amount, address receiver) public {
+        nonfungiblePositionManager.sweepToken(_token, amount, receiver);
     }
 
     function collect(address _token0, address _token1, uint _fee) public {
