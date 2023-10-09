@@ -239,9 +239,13 @@ contract YfSc{
     mapping(uint => address) positionsOwners;
 
     mapping(address => uint) public userPositionsCount;
+// -887220
+// 27060
 
-    int24 public tickLower = -887220;
-    int24 public tickUpper = 887220;
+  // tickLower = -27060;
+  // tickUpper = -25680;
+    int24 public tickLower = -27060;
+    int24 public tickUpper = -25680;
 
     uint public deadline = 600;
 
@@ -271,8 +275,7 @@ contract YfSc{
     int24 public tick_lower_0;
     int24 public tick_upper_0;
 
-    int24 public tick_lower_1;
-    int24 public tick_upper_1;
+    uint public amount1_public;
 
     /**
      * Contract initialization.
@@ -341,13 +344,13 @@ contract YfSc{
         // newBalanceToken0, newBalanceToken1, 
         // _amount0Min, _amount1Min);
 
-        // mintNFT(
-        //     _token0, 
-        //     _token1, 
-        //     _fee, 
-        //     newBalanceToken0, 
-        //     newBalanceToken1
-        // );
+        mintNFT(
+            _token0, 
+            _token1, 
+            _fee, 
+            newBalanceToken0
+            // newBalanceToken1
+        );
 
     }
 
@@ -437,15 +440,19 @@ contract YfSc{
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
+        // tickLower = -27060;
+        // tickUpper = -25680;
         uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
-        _amount1 = 10000000000000;
+        
+        // _amount1 = 10000000000000;
+        
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         
-        uint _amount0Min = _amount0 - _amount0 * slippageToken0 / quotient;
-        uint _amount1Min = _amount1- _amount1 * slippageToken1 / quotient;
+        uint _amount0Min = 0;// _amount0 - _amount0 * slippageToken0 / quotient;
+        uint _amount1Min = 0; // _amount1- _amount1 * slippageToken1 / quotient;
 
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
@@ -530,11 +537,30 @@ contract YfSc{
         int24 _tickUpper,
         uint256 amount0
     ) public pure returns (uint128 liquidity) {
+        // liquidity = amount0;
+        // return liquidity;
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower); //A sqrt price representing the first tick boundary
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper); //A sqrt price representing the second tick boundary
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
         uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
         return toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
+    }
+
+    /// @notice Computes the amount of liquidity received for a given amount of token1 and price range
+    /// @dev Calculates amount1 / (sqrt(upper) - sqrt(lower)).
+    /// @param _tickLower tick lower
+    /// @param _tickUpper tick upper
+    /// @param amount1 The amount1 being sent in
+    /// @return liquidity The amount of returned liquidity
+    function getLiquidityForAmount1(
+        int24 _tickLower,
+        int24 _tickUpper,
+        uint256 amount1
+    ) public pure returns (uint128 liquidity) {
+        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower); //A sqrt price representing the first tick boundary
+        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper); //A sqrt price representing the second tick boundary
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        return toUint128(FullMath.mulDiv(amount1, FixedPoint96.Q96, sqrtRatioBX96 - sqrtRatioAX96));
     }
 
     /// @notice Computes the amount of liquidity received for a given amount of token0 and price range
@@ -547,15 +573,16 @@ contract YfSc{
         int24 _tickLower,
         int24 _tickUpper,
         uint256 amount0
-    ) internal pure returns (uint256 amount1) {
+    ) public pure returns (uint256 amount1) {
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower); //A sqrt price representing the first tick boundary
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper); //A sqrt price representing the second tick boundary
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
         uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
         uint128 liquidity = toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
-        return FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        // amount1_public = amount0;
+        amount1 = FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        return amount1;
     }
-
 
     // add the fees 
     // in rebalance you take just the nft id 
