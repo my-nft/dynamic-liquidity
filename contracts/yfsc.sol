@@ -247,6 +247,9 @@ contract YfSc{
     int24 public tickLower = -27060;
     int24 public tickUpper = -25680;
 
+    // -21960
+    // -20820
+
     uint public deadline = 600;
 
     uint public slippageToken0 = 500; // => 5 %
@@ -319,8 +322,8 @@ contract YfSc{
 
     // you will need to update the ticks first before calling this methods
     function updatePosition(address _token0, address _token1, uint24 _fee) external onlyOwner {
-        tick_lower_0 = tickLower;
-        tick_upper_0 = tickUpper;
+        // tick_lower_0 = tickLower;
+        // tick_upper_0 = tickUpper;
 
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
@@ -335,22 +338,33 @@ contract YfSc{
         uint _amount0Min = newBalanceToken0 - newBalanceToken0 * slippageToken0 / quotient;
         uint _amount1Min = newBalanceToken1- newBalanceToken1 * slippageToken1 / quotient;
 
-        tickLower = -27060;
-        tickUpper = -25680;
+        setTicks(-21960, -20820);
 
         // mintUni3Nft(_token0, _token1, 
         // _fee, 
         // tickLower, tickUpper, 
         // newBalanceToken0, newBalanceToken1, 
         // _amount0Min, _amount1Min);
+        uint _amount0 = newBalanceToken0;
+        tick_lower_0 = tickLower;
+        tick_upper_0 = tickUpper;
+        uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
+        
+        // token0.transferFrom(msg.sender, address(this), _amount0);
+        // token1.transferFrom(msg.sender, address(this), _amount1);
+        token0.approve(address(nonfungiblePositionManager), _amount0);
+        token1.approve(address(nonfungiblePositionManager), _amount1);
+        
+        _amount0Min = 0;// _amount0 - _amount0 * slippageToken0 / quotient;
+        _amount1Min = 0; // _amount1- _amount1 * slippageToken1 / quotient;
+        mintUni3Nft(_token0, _token1, _fee, tick_lower_0, tick_upper_0, _amount0, _amount1, _amount0Min, _amount1Min);
 
-        mintNFT(
-            _token0, 
-            _token1, 
-            _fee, 
-            newBalanceToken0
-            // newBalanceToken1
-        );
+        // mintNFT(
+        //     _token0, 
+        //     _token1, 
+        //     _fee, 
+        //     newBalanceToken0 
+        // );
 
     }
 
@@ -440,11 +454,7 @@ contract YfSc{
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
-        // tickLower = -27060;
-        // tickUpper = -25680;
         uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
-        
-        // _amount1 = 10000000000000;
         
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);

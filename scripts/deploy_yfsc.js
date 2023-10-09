@@ -75,6 +75,8 @@ async function main() {
   const getLiquidityForAmount0 = await YfScContract.getLiquidityForAmount0("-27060",  "-25680", "14598669169") 
   console.log("getLiquidityForAmount0: ", getLiquidityForAmount0);
 
+
+
   // const getLiquidityForAmount1 = await YfScContract.getLiquidityForAmount1("-27060",  "-25680", "10000000000") 
   // console.log("getLiquidityForAmount1: ", getLiquidityForAmount1);
 
@@ -100,6 +102,11 @@ async function main() {
   )
   await tx5.wait()
   // console.log("update liquidity position: ", tx5);
+
+  const tick_lower_0 = await YfScContract.tick_lower_0() 
+  console.log("tick_lower_0: ", tick_lower_0);
+  const tick_upper_0 = await YfScContract.tick_upper_0() 
+  console.log("tick_upper_0: ", tick_upper_0);
 
   console.log("done!")
 }
