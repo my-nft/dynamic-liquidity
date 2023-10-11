@@ -69,18 +69,7 @@ async function main() {
   //   int24 public tickUpper = 887220;
   // "-887220",  "887220"
   // "-27060",  "-25680"
-  const getAmount1ForAmount0 = await YfScContract.getAmount1ForAmount0("-27060",  "-25680", "14598669169") 
-  console.log("getAmount1ForAmount0: ", getAmount1ForAmount0);
-
-  const getLiquidityForAmount0 = await YfScContract.getLiquidityForAmount0("-27060",  "-25680", "14598669169") 
-  console.log("getLiquidityForAmount0: ", getLiquidityForAmount0);
-
-
-
-  // const getLiquidityForAmount1 = await YfScContract.getLiquidityForAmount1("-27060",  "-25680", "10000000000") 
-  // console.log("getLiquidityForAmount1: ", getLiquidityForAmount1);
-
-
+ 
   // const tx4 = await YfScContract.connect(signer2[0]).decreaseLiquidity( 
   //   UNI_ADDRESS, 
   //   WETH_ADDRESS, 
@@ -91,8 +80,6 @@ async function main() {
   // await tx4.wait() 
   // console.log("decrease liquidity validated: ", tx4); 
 
-  const amoun1 = await YfScContract.amount1_public(); 
-  // console.log("amoun1: ", amoun1); 
 
   const tx5 = await YfScContract.connect(signer2[0]).updatePosition(
     UNI_ADDRESS, 
@@ -101,13 +88,7 @@ async function main() {
     { gasLimit: '1000000' }
   )
   await tx5.wait()
-  // console.log("update liquidity position: ", tx5);
-
-  const tick_lower_0 = await YfScContract.tick_lower_0() 
-  console.log("tick_lower_0: ", tick_lower_0);
-  const tick_upper_0 = await YfScContract.tick_upper_0() 
-  console.log("tick_upper_0: ", tick_upper_0);
-
+ 
   console.log("done!")
 }
 
