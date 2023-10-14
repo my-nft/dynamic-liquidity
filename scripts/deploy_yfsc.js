@@ -35,8 +35,8 @@ async function main() {
   await wethContract.connect(signer2[0]).approve(YfScContract.target, ethers.parseEther("1000"))
   await uniContract.connect(signer2[0]).approve(YfScContract.target, ethers.parseEther("1000"))
 
-  await wethContract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"))
-  await uniContract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"))
+  // await wethContract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"))
+  // await uniContract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"))
 
   let deadline = Math.floor(Date.now() / 1000) + (60 * 10); 
 
@@ -62,6 +62,16 @@ async function main() {
   )
   await tx2.wait()
 
+  const tx3 = await YfScContract.connect(signer2[0]).mintNFT(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "145986691695200",
+    // "10000000000000", 
+    { gasLimit: '1000000' }
+  )
+  await tx3.wait()
+
   // tickLower = -27060;
   // tickUpper = -25680;
 
@@ -80,14 +90,21 @@ async function main() {
   // await tx4.wait() 
   // console.log("decrease liquidity validated: ", tx4); 
 
+  const tx5 = await YfScContract.connect(signer2[0]).setTicks(
+    "-21960",
+    "-20820",
+    { gasLimit: '1000000' }
+  )
+  await tx5.wait()
 
-  const tx5 = await YfScContract.connect(signer2[0]).updatePosition(
+
+  const tx6 = await YfScContract.connect(signer2[0]).updatePosition(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000",
     { gasLimit: '1000000' }
   )
-  await tx5.wait()
+  await tx6.wait()
  
   console.log("done!")
 }

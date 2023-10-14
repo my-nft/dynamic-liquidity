@@ -1,6 +1,6 @@
 // Sources flattened with hardhat v2.17.3 https://hardhat.org
 
-// SPDX-License-Identifier: MIT AND UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later AND MIT AND UNLICENSED
 
 // File @openzeppelin/contracts/access/IAccessControl.sol@v4.9.3
 
@@ -2480,6 +2480,370 @@ library Counters {
 }
 
 
+// File contracts/FixedPoint96.sol
+
+// Original license: SPDX_License_Identifier: GPL-2.0-or-later
+pragma solidity ^0.8.9;
+
+/// @title FixedPoint96
+/// @notice A library for handling binary fixed point numbers, see https://en.wikipedia.org/wiki/Q_(number_format)
+/// @dev Used in SqrtPriceMath.sol
+library FixedPoint96 {
+    uint8 internal constant RESOLUTION = 96;
+    uint256 internal constant Q96 = 0x1000000000000000000000000;
+}
+
+
+// File contracts/FullMath.sol
+
+// Original license: SPDX_License_Identifier: MIT
+pragma solidity ^0.8.0;
+
+/// @title Contains 512-bit math functions
+/// @notice Facilitates multiplication and division that can have overflow of an intermediate value without any loss of precision
+/// @dev Handles "phantom overflow" i.e., allows multiplication and division where an intermediate value overflows 256 bits
+library FullMath {
+    /// @notice Calculates floor(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
+    /// @param a The multiplicand
+    /// @param b The multiplier
+    /// @param denominator The divisor
+    /// @return result The 256-bit result
+    /// @dev Credit to Remco Bloemen under MIT license https://xn--2-umb.com/21/muldiv
+    function mulDiv(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        unchecked {
+            // 512-bit multiply [prod1 prod0] = a * b
+            // Compute the product mod 2**256 and mod 2**256 - 1
+            // then use the Chinese Remainder Theorem to reconstruct
+            // the 512 bit result. The result is stored in two 256
+            // variables such that product = prod1 * 2**256 + prod0
+            uint256 prod0; // Least significant 256 bits of the product
+            uint256 prod1; // Most significant 256 bits of the product
+            assembly {
+                let mm := mulmod(a, b, not(0))
+                prod0 := mul(a, b)
+                prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+            }
+
+            // Handle non-overflow cases, 256 by 256 division
+            if (prod1 == 0) {
+                require(denominator > 0);
+                assembly {
+                    result := div(prod0, denominator)
+                }
+                return result;
+            }
+
+            // Make sure the result is less than 2**256.
+            // Also prevents denominator == 0
+            require(denominator > prod1);
+
+            ///////////////////////////////////////////////
+            // 512 by 256 division.
+            ///////////////////////////////////////////////
+
+            // Make division exact by subtracting the remainder from [prod1 prod0]
+            // Compute remainder using mulmod
+            uint256 remainder;
+            assembly {
+                remainder := mulmod(a, b, denominator)
+            }
+            // Subtract 256 bit number from 512 bit number
+            assembly {
+                prod1 := sub(prod1, gt(remainder, prod0))
+                prod0 := sub(prod0, remainder)
+            }
+
+            // Factor powers of two out of denominator
+            // Compute largest power of two divisor of denominator.
+            // Always >= 1.
+            uint256 twos = (0 - denominator) & denominator;
+            // Divide denominator by power of two
+            assembly {
+                denominator := div(denominator, twos)
+            }
+
+            // Divide [prod1 prod0] by the factors of two
+            assembly {
+                prod0 := div(prod0, twos)
+            }
+            // Shift in bits from prod1 into prod0. For this we need
+            // to flip `twos` such that it is 2**256 / twos.
+            // If twos is zero, then it becomes one
+            assembly {
+                twos := add(div(sub(0, twos), twos), 1)
+            }
+            prod0 |= prod1 * twos;
+
+            // Invert denominator mod 2**256
+            // Now that denominator is an odd number, it has an inverse
+            // modulo 2**256 such that denominator * inv = 1 mod 2**256.
+            // Compute the inverse by starting with a seed that is correct
+            // correct for four bits. That is, denominator * inv = 1 mod 2**4
+            uint256 inv = (3 * denominator) ^ 2;
+            // Now use Newton-Raphson iteration to improve the precision.
+            // Thanks to Hensel's lifting lemma, this also works in modular
+            // arithmetic, doubling the correct bits in each step.
+            inv *= 2 - denominator * inv; // inverse mod 2**8
+            inv *= 2 - denominator * inv; // inverse mod 2**16
+            inv *= 2 - denominator * inv; // inverse mod 2**32
+            inv *= 2 - denominator * inv; // inverse mod 2**64
+            inv *= 2 - denominator * inv; // inverse mod 2**128
+            inv *= 2 - denominator * inv; // inverse mod 2**256
+
+            // Because the division is now exact we can divide by multiplying
+            // with the modular inverse of denominator. This will give us the
+            // correct result modulo 2**256. Since the precoditions guarantee
+            // that the outcome is less than 2**256, this is the final result.
+            // We don't need to compute the high bits of the result and prod1
+            // is no longer required.
+            result = prod0 * inv;
+            return result;
+        }
+    }
+
+    /// @notice Calculates ceil(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
+    /// @param a The multiplicand
+    /// @param b The multiplier
+    /// @param denominator The divisor
+    /// @return result The 256-bit result
+    function mulDivRoundingUp(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        unchecked {
+            result = mulDiv(a, b, denominator);
+            if (mulmod(a, b, denominator) > 0) {
+                require(result < type(uint256).max);
+                result++;
+            }
+        }
+    }
+}
+
+
+// File contracts/TickMath.sol
+
+// Original license: SPDX_License_Identifier: GPL-2.0-or-later
+pragma solidity ^0.8.0;
+
+/// @title Math library for computing sqrt prices from ticks and vice versa
+/// @notice Computes sqrt price for ticks of size 1.0001, i.e. sqrt(1.0001^tick) as fixed point Q64.96 numbers. Supports
+/// prices between 2**-128 and 2**128
+library TickMath {
+    error T();
+    error R();
+
+    /// @dev The minimum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**-128
+    int24 internal constant MIN_TICK = -887272;
+    /// @dev The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
+    int24 internal constant MAX_TICK = -MIN_TICK;
+
+    /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
+    uint160 internal constant MIN_SQRT_RATIO = 4295128739;
+    /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
+    uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
+
+    /// @notice Calculates sqrt(1.0001^tick) * 2^96
+    /// @dev Throws if |tick| > max tick
+    /// @param tick The input tick for the above formula
+    /// @return sqrtPriceX96 A Fixed point Q64.96 number representing the sqrt of the ratio of the two assets (token1/token0)
+    /// at the given tick
+    function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160 sqrtPriceX96) {
+        unchecked {
+            uint256 absTick = tick < 0 ? uint256(-int256(tick)) : uint256(int256(tick));
+            if (absTick > uint256(int256(MAX_TICK))) revert T();
+
+            uint256 ratio = absTick & 0x1 != 0
+                ? 0xfffcb933bd6fad37aa2d162d1a594001
+                : 0x100000000000000000000000000000000;
+            if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
+            if (absTick & 0x4 != 0) ratio = (ratio * 0xfff2e50f5f656932ef12357cf3c7fdcc) >> 128;
+            if (absTick & 0x8 != 0) ratio = (ratio * 0xffe5caca7e10e4e61c3624eaa0941cd0) >> 128;
+            if (absTick & 0x10 != 0) ratio = (ratio * 0xffcb9843d60f6159c9db58835c926644) >> 128;
+            if (absTick & 0x20 != 0) ratio = (ratio * 0xff973b41fa98c081472e6896dfb254c0) >> 128;
+            if (absTick & 0x40 != 0) ratio = (ratio * 0xff2ea16466c96a3843ec78b326b52861) >> 128;
+            if (absTick & 0x80 != 0) ratio = (ratio * 0xfe5dee046a99a2a811c461f1969c3053) >> 128;
+            if (absTick & 0x100 != 0) ratio = (ratio * 0xfcbe86c7900a88aedcffc83b479aa3a4) >> 128;
+            if (absTick & 0x200 != 0) ratio = (ratio * 0xf987a7253ac413176f2b074cf7815e54) >> 128;
+            if (absTick & 0x400 != 0) ratio = (ratio * 0xf3392b0822b70005940c7a398e4b70f3) >> 128;
+            if (absTick & 0x800 != 0) ratio = (ratio * 0xe7159475a2c29b7443b29c7fa6e889d9) >> 128;
+            if (absTick & 0x1000 != 0) ratio = (ratio * 0xd097f3bdfd2022b8845ad8f792aa5825) >> 128;
+            if (absTick & 0x2000 != 0) ratio = (ratio * 0xa9f746462d870fdf8a65dc1f90e061e5) >> 128;
+            if (absTick & 0x4000 != 0) ratio = (ratio * 0x70d869a156d2a1b890bb3df62baf32f7) >> 128;
+            if (absTick & 0x8000 != 0) ratio = (ratio * 0x31be135f97d08fd981231505542fcfa6) >> 128;
+            if (absTick & 0x10000 != 0) ratio = (ratio * 0x9aa508b5b7a84e1c677de54f3e99bc9) >> 128;
+            if (absTick & 0x20000 != 0) ratio = (ratio * 0x5d6af8dedb81196699c329225ee604) >> 128;
+            if (absTick & 0x40000 != 0) ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98) >> 128;
+            if (absTick & 0x80000 != 0) ratio = (ratio * 0x48a170391f7dc42444e8fa2) >> 128;
+
+            if (tick > 0) ratio = type(uint256).max / ratio;
+
+            // this divides by 1<<32 rounding up to go from a Q128.128 to a Q128.96.
+            // we then downcast because we know the result always fits within 160 bits due to our tick input constraint
+            // we round up in the division so getTickAtSqrtRatio of the output price is always consistent
+            sqrtPriceX96 = uint160((ratio >> 32) + (ratio % (1 << 32) == 0 ? 0 : 1));
+        }
+    }
+
+    /// @notice Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio
+    /// @dev Throws in case sqrtPriceX96 < MIN_SQRT_RATIO, as MIN_SQRT_RATIO is the lowest value getRatioAtTick may
+    /// ever return.
+    /// @param sqrtPriceX96 The sqrt ratio for which to compute the tick as a Q64.96
+    /// @return tick The greatest tick for which the ratio is less than or equal to the input ratio
+    function getTickAtSqrtRatio(uint160 sqrtPriceX96) internal pure returns (int24 tick) {
+        unchecked {
+            // second inequality must be < because the price can never reach the price at the max tick
+            if (!(sqrtPriceX96 >= MIN_SQRT_RATIO && sqrtPriceX96 < MAX_SQRT_RATIO)) revert R();
+            uint256 ratio = uint256(sqrtPriceX96) << 32;
+
+            uint256 r = ratio;
+            uint256 msb = 0;
+
+            assembly {
+                let f := shl(7, gt(r, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := shl(6, gt(r, 0xFFFFFFFFFFFFFFFF))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := shl(5, gt(r, 0xFFFFFFFF))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := shl(4, gt(r, 0xFFFF))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := shl(3, gt(r, 0xFF))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := shl(2, gt(r, 0xF))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := shl(1, gt(r, 0x3))
+                msb := or(msb, f)
+                r := shr(f, r)
+            }
+            assembly {
+                let f := gt(r, 0x1)
+                msb := or(msb, f)
+            }
+
+            if (msb >= 128) r = ratio >> (msb - 127);
+            else r = ratio << (127 - msb);
+
+            int256 log_2 = (int256(msb) - 128) << 64;
+
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(63, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(62, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(61, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(60, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(59, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(58, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(57, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(56, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(55, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(54, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(53, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(52, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(51, f))
+                r := shr(f, r)
+            }
+            assembly {
+                r := shr(127, mul(r, r))
+                let f := shr(128, r)
+                log_2 := or(log_2, shl(50, f))
+            }
+
+            int256 log_sqrt10001 = log_2 * 255738958999603826347141; // 128.128 number
+
+            int24 tickLow = int24((log_sqrt10001 - 3402992956809132418596140100660247210) >> 128);
+            int24 tickHi = int24((log_sqrt10001 + 291339464771989622907027621153398088495) >> 128);
+
+            tick = tickLow == tickHi ? tickLow : getSqrtRatioAtTick(tickHi) <= sqrtPriceX96 ? tickHi : tickLow;
+        }
+    }
+}
+
+
 // File hardhat/console.sol@v2.17.3
 
 // Original license: SPDX_License_Identifier: MIT
@@ -4050,6 +4414,8 @@ pragma solidity ^0.8.9;
 
 
 
+
+
 struct IncreaseLiquidityParams {
     uint256 tokenId;
     uint256 amount0Desired;
@@ -4098,7 +4464,7 @@ struct CollectParams {
 // details about the uniswap position
 // struct Univ3Position {
 //     // the nonce for permits
-//     uint96 nonce;
+//     uint96 nonce; 
 //     // the address that is approved for spending this token
 //     address operator;
 //     // the ID of the pool with which this token is connected
@@ -4127,10 +4493,11 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
 
     mapping(address => mapping(uint=>uint)) public userNftPerPool;
 
-    mapping(uint=>uint128) public liquidityForUserInPool; // nft --> liquidity 
+    mapping(uint=>mapping(uint=>uint128)) public liquidityForUserInPoolAtState; // nft --> state --> liquidity 
 
-    mapping(uint=>uint) public liquidityLastDepositTime; // nft --> liquidity 
+    mapping(uint => mapping(uint => uint)) public statesIdsForPosition;
 
+    mapping(uint => uint) public totalStatesForPosition;
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
@@ -4146,23 +4513,32 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         _unpause();
     }
 
-    function safeMint(uint uniswapNftId, address receiver, uint128 liquidity) public onlyRole(MINTER_ROLE) {
+    function safeMint(uint _uniswapNftId, address _receiver, uint128 _liquidity, uint _state) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(receiver, tokenId);
-        userNftPerPool[receiver][uniswapNftId] = tokenId;
-        liquidityForUserInPool[tokenId] = liquidity;
-        liquidityLastDepositTime[tokenId] = block.timestamp;
+        _safeMint(_receiver, tokenId);
+        userNftPerPool[_receiver][_uniswapNftId] = tokenId;   
+        updateLiquidityForUser(tokenId, _liquidity, _state);
     }
 
     function getUserNftPerPool(address receiver, uint uniswapNftId) view public returns (uint) {
         return userNftPerPool[receiver][uniswapNftId];
     }
 
+    function updateLiquidityForUser(uint positionNftId, uint128 _liquidity,uint _state)public onlyRole(MINTER_ROLE) {
+        liquidityForUserInPoolAtState[positionNftId][_state] = _liquidity;
+        totalStatesForPosition[positionNftId]++;
+        statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;
+    }
 
-    function updateLiquidityForUser(uint positionNftId, uint128 liquidity)public onlyRole(MINTER_ROLE) {
-        liquidityForUserInPool[positionNftId] = liquidityForUserInPool[positionNftId] + liquidity;
-        liquidityLastDepositTime[positionNftId] = block.timestamp;
+    function getLiquidityForUserInPoolAtState(uint _userPositionNft, uint _state) public returns(uint128 liquidity){
+        liquidity = liquidityForUserInPoolAtState[_userPositionNft][_state];
+        return liquidity;
+    }
+
+    function getStatesIdsForPosition(uint _userPositionNft, uint _stateId) public returns(uint id){
+        id = liquidityForUserInPoolAtState[_userPositionNft][_stateId];
+        return id;
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
@@ -4224,6 +4600,32 @@ contract NonfungiblePositionManager {
         // override
         // isAuthorizedForToken(params.tokenId)
         returns (uint256 amount0, uint256 amount1){}
+
+    function sweepToken(
+        address token,
+        uint256 amountMinimum,
+        address recipient
+    ) external payable {}
+
+    function positions(uint256 tokenId)
+        external
+        view
+        // override
+        returns (
+            uint96 nonce,
+            address operator,
+            address token0,
+            address token1,
+            uint24 fee,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
+        )
+    {}
 }
 
 /// @title YF SC : dynamic liquidity for uniswap V3
@@ -4234,21 +4636,25 @@ contract YfSc{
     /// @return owner the address of this smart contract's deployer
     address public owner;
 
-    uint public positionsIndex;
+    /// fees distribution 
+    uint public statesCounter; 
+    
+    /// positionNft => atatesCounter for last collection 
+    mapping(uint => uint) public lastRewardClaim; // last reward claim for a position NFT
+    /// positionNft => blocknumber => collected reward 
 
-    mapping(uint => address) public positionsPair;
-    mapping(uint => address) public positionOwner;
+    mapping(uint=>uint) public liquidityLastStateUpdate; // nft --> last State Update for liquidity for Uni3 NFT
 
-    mapping(address => uint) public balances;
-    mapping(address => uint) public paidBalances;
+    mapping(uint => mapping(uint=>uint)) public liquidityStatesPerNft; // nft --> state --> amount 
 
-    mapping(uint => address) positionsOwners;
+    /// Original uniswapNFT => total reward at statesCounter (for token0 and token1) 
+    mapping(uint => mapping(uint => uint)) public totalRewardReceivedAtStateForToken0; 
+    mapping(uint => mapping(uint => uint)) public totalRewardReceivedAtStateForToken1; 
+  
+    mapping(uint => mapping(uint => uint128)) public totalLiquidityAtStateForNft; 
 
-    mapping(address => uint) public userPositionsCount;
-
-    int24 public tickLower = -887220;
-    int24 public tickUpper = 887220;
-
+    int24 public tickLower = -27060; // -21960
+    int24 public tickUpper = -25680; // -20820
     uint public deadline = 600;
 
     uint public slippageToken0 = 500; // => 5 %
@@ -4262,23 +4668,16 @@ contract YfSc{
 
     uint public liquidityLockTime = 3600 * 24 * 30; // one month liquidty lock time 
 
+    mapping(uint => uint) public liquidityLastDepositTime; // position nft => timestamp
+
     PositionsNFT public positionsNFT;
     NonfungiblePositionManager public nonfungiblePositionManager;
 
-    mapping(uint => uint) public totalLiquidity;
-
     mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds; // [token0][token1][fee] = Original nft Id
+    mapping(address => mapping(address => mapping(uint => uint))) public originalPoolNftIds; // [token0][token1][fee] = Original nft Id
     mapping(uint => uint) public updatedlNftId; // to keep track of the position after nft id change in case of change of ticks (remove and add liquidity)
 
-    mapping(address => uint) public tokensBalances;
     mapping(address => uint) public totalRewards;
-    mapping(address => uint) public paidRewards;
-
-    uint public public_nft_id;
-    uint public public_liquidityToRemove;
-    uint public public_amount0Min;
-    uint public public_amount1Min;
-    uint public public_deadline; 
 
     /**
      * Contract initialization.
@@ -4302,6 +4701,10 @@ contract YfSc{
         _;
     }
 
+    function toUint128(uint256 x) private pure returns (uint128 y) {
+        require((y = uint128(x)) == x);
+    }
+
     function setTicks(int24 _tickLower, int24 _tickUpper) public onlyOwner{
         tickLower = _tickLower;
         tickUpper = _tickUpper;
@@ -4322,27 +4725,56 @@ contract YfSc{
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
 
-        uint oldBalanceToken0 = token0.balanceOf(address(this));
-        uint oldBalanceToken1 = token1.balanceOf(address(this));
+        uint balanceToken0BeforeCollection = token0.balanceOf(address(this));
+        uint balanceToken1BeforeCollection = token1.balanceOf(address(this));
+
+        collect(_token0, _token1, _fee);
+
+        uint balanceToken0AfterCollection = token0.balanceOf(address(this));
+        uint balanceToken1AfterCollection = token1.balanceOf(address(this));
 
         decreaseLiquidity(_token0, _token1, _fee, 100);
 
         uint newBalanceToken0 = token0.balanceOf(address(this));
         uint newBalanceToken1 = token1.balanceOf(address(this));
 
-        uint balance0 = newBalanceToken0 - oldBalanceToken0;
-        uint balance1 = newBalanceToken1 - oldBalanceToken1;
+        uint _nftId = poolNftIds[_token0][_token1][_fee];
 
         poolNftIds[_token0][_token1][_fee] = 0;
 
-        mintNFT(
-            _token0, 
-            _token1, 
-            _fee, 
-            balance0, 
-            balance1
-        );
+        uint _amount0Min = newBalanceToken0 - newBalanceToken0 * slippageToken0 / quotient;
+        uint _amount1Min = newBalanceToken1- newBalanceToken1 * slippageToken1 / quotient;
 
+        setTicks(-21960, -20820);
+
+        uint _amount0 = newBalanceToken0;
+    
+        uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
+ 
+        token0.approve(address(nonfungiblePositionManager), _amount0);
+        token1.approve(address(nonfungiblePositionManager), _amount1);
+        
+        _amount0Min = 0 ; //_amount0 - _amount0 * slippageToken0 / quotient; 
+        _amount1Min = 0 ; // _amount1 - _amount1 * slippageToken1 / quotient; 
+        mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+
+        uint _originalPositionNft = originalPoolNftIds[_token0][_token1][_fee];
+
+        totalRewardReceivedAtStateForToken0[statesCounter][_originalPositionNft] = 
+        totalRewardReceivedAtStateForToken0[statesCounter][_originalPositionNft] + 
+        balanceToken0AfterCollection -
+        balanceToken0AfterCollection;
+
+        totalRewardReceivedAtStateForToken1[statesCounter][_originalPositionNft] = 
+        totalRewardReceivedAtStateForToken1[statesCounter][_originalPositionNft] + 
+        balanceToken1AfterCollection -
+        balanceToken1AfterCollection;
+
+        (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_nftId);
+
+        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
+        statesCounter ++ ; 
+        // handle the risidual tokens not added to liquidity because of ratio difference 
     }
 
     function mintUni3Nft(
@@ -4355,7 +4787,7 @@ contract YfSc{
                             uint _amount1, 
                             uint _amount0Min, 
                             uint _amount1Min
-                        ) internal {
+                        ) internal returns(uint128 liquidity){
             MintParams memory mintParams;
             mintParams = MintParams(
                         _token0, 
@@ -4370,18 +4802,20 @@ contract YfSc{
                         address(this), 
                         block.timestamp + deadline 
                         );
-
-            (uint256 tokenId, uint128 liquidity, , ) = nonfungiblePositionManager.mint(mintParams);
-
+            
+            (uint256 tokenId, uint128 _liquidity , , ) = nonfungiblePositionManager.mint(mintParams);
+            originalPoolNftIds[_token0][_token1][_fee] = tokenId;
             poolNftIds[_token0][_token1][_fee] = tokenId;
 
             poolNftIds[_token1][_token0][_fee] = tokenId;
 
             updatedlNftId[tokenId] = tokenId;
-            positionsNFT.safeMint(tokenId, msg.sender, liquidity);
+            
+            positionsNFT.safeMint(tokenId, msg.sender, _liquidity, statesCounter);
+            statesCounter++ ;
 
-            totalLiquidity[tokenId] = liquidity; 
-
+            liquidity = _liquidity;
+            return liquidity;
     }
 
     function increaseUni3Nft(
@@ -4392,28 +4826,50 @@ contract YfSc{
                                 uint _amount1, 
                                 uint _amount0Min, 
                                 uint _amount1Min) 
-                            internal{
-        // IncreaseLiquidityParams memory increaseLiquidityParams;
-
-        uint tokenId = poolNftIds[_token0][_token1][_fee] > 0 ? poolNftIds[_token0][_token1][_fee] : poolNftIds[_token1][_token0][_fee];
+                            internal returns(uint128 liquidity){
         
-        IncreaseLiquidityParams memory increaseLiquidityParams;
-        increaseLiquidityParams = IncreaseLiquidityParams(
+     
+        uint tokenId = poolNftIds[_token0][_token1][_fee] > 0 ? poolNftIds[_token0][_token1][_fee] : poolNftIds[_token1][_token0][_fee];
+        uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
+        uint128 oldLiquidity = totalLiquidityAtStateForNft[_nftId][statesCounter];
+        ////////////////// handle rewards distribution //////////////////////
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
+        uint balanceToken0BeforeCollection = token0.balanceOf(address(this));
+        uint balanceToken1BeforeCollection = token1.balanceOf(address(this));
+
+        collect(_token0, _token1, _fee);
+
+        uint balanceToken0AfterCollection = token0.balanceOf(address(this));
+        uint balanceToken1AfterCollection = token1.balanceOf(address(this));
+        ////////////////////////////////////////////////////////////////////
+        IncreaseLiquidityParams memory increaseLiquidityParams; 
+        increaseLiquidityParams = IncreaseLiquidityParams( 
                     updatedlNftId[tokenId], 
                     _amount0, 
                     _amount1, 
                     _amount0Min, 
                     _amount1Min, 
                     block.timestamp + deadline ); 
-        (uint128 liquidity,,) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
-
-        totalLiquidity[updatedlNftId[tokenId]] = totalLiquidity[updatedlNftId[tokenId]] + liquidity;
-
+        (liquidity,,) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams); 
+        ///////////////// BEGIN: UPDATE LIQUIDITY MAPPINGS ////////////////////////
+        uint positionNft = positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[tokenId]);
+        totalLiquidityAtStateForNft[tokenId][statesCounter] = liquidity; 
+        uint userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[tokenId]);
+        uint128 userAddedLiquidty = liquidity - oldLiquidity;
+        uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(userPositionNft);
+        uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(userPositionNft, lastLiquidityUpdateStateForPosition);
+        
+        uint128 userOldLiquidityInPool = positionsNFT.getLiquidityForUserInPoolAtState(userPositionNft, userPositionLastUpdateState);
+    
         if(positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[tokenId]) == 0){
-            positionsNFT.safeMint(tokenId, msg.sender, liquidity);
+            positionsNFT.safeMint(tokenId, msg.sender, userAddedLiquidty, statesCounter);
         }else{
-            positionsNFT.updateLiquidityForUser(positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[tokenId]), liquidity);
+            positionsNFT.updateLiquidityForUser(positionNft, userAddedLiquidty + userOldLiquidityInPool, statesCounter);
         }
+        statesCounter++ ;
+        ///////////////// END: UPDATE LIQUIDITY MAPPINGS ////////////////////////
+        return liquidity;
     }
 
     /// @notice Allow user to deposit liquidity and mint corresponding NFT
@@ -4422,63 +4878,91 @@ contract YfSc{
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
     /// @param _amount0 0 for _token0, 1 for _token1
-    /// @param _amount1 0 for _token0, 1 for _token1
+    // To avoid being stuck with random erc20, bettre put weth address as _token1
     function mintNFT(
     address _token0, 
     address _token1, 
     uint24 _fee, 
-    uint _amount0, 
-    uint _amount1
+    uint _amount0 
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
+        uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
+        
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         
-        uint _amount0Min = _amount0 - _amount0 * slippageToken0 / quotient;
-        uint _amount1Min = _amount1- _amount1 * slippageToken1 / quotient;
-        console.log("before testing");
+        uint _amount0Min = 0; // _amount0 - _amount0 * slippageToken0 / quotient;
+        uint _amount1Min = 0; // _amount1- _amount1 * slippageToken1 / quotient;
+
+        uint128 _liquidityAdded;
+
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
-            mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+            _liquidityAdded = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
         }else{
-            // console.log("increasing", _token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
-            console.log("increasing");
+            _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
+        }    
+        ///////////////// BEGIN: UPDATE LIQUIDITY MAPPINGS ////////////////////////
+        uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
+        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidityAdded; 
+        liquidityLastStateUpdate[_nftId] = statesCounter;
 
-            increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
-        }        
+        uint userNft = positionsNFT.getUserNftPerPool(msg.sender, _nftId);
+        positionsNFT.updateLiquidityForUser(userNft, _liquidityAdded, statesCounter);
+
+        statesCounter++ ;
+        liquidityLastDepositTime[userNft] = block.timestamp;
+        ////////////////// END: UPDATE LIQUIDITY MAPPINGS ////////////////////////
     }
 
     function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage) public {
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[_poolNftId]);
-        require(positionsNFT.liquidityLastDepositTime(_userNftId) < block.timestamp + liquidityLockTime, "liquidity locked !");
+        require(liquidityLastDepositTime[_userNftId] < block.timestamp + liquidityLockTime, "liquidity locked !");
         uint userNft = positionsNFT.getUserNftPerPool(msg.sender, updatedlNftId[_poolNftId]);
-        uint128 _userLiquidity = positionsNFT.liquidityForUserInPool(updatedlNftId[_poolNftId]);
-
+        uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
+        uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition);
+        uint128 _userLiquidity = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
+     
         uint128 _liquidityToRemove = _userLiquidity * _purcentage / 100;
 
-        uint _amount0Min = 0;
-        uint _amount1Min = 0;
- 
+        uint _amount0Min = 0; // maybe integrate slippage later
+        uint _amount1Min = 0; // maybe integrate slippage later 
+
         DecreaseLiquidityParams memory decreaseLiquidityParams;
         decreaseLiquidityParams = DecreaseLiquidityParams(
                     updatedlNftId[_poolNftId], 
                     _liquidityToRemove, 
                     _amount0Min, 
                     _amount1Min, 
-                    block.timestamp + deadline ); 
+                    block.timestamp + deadline); 
 
-        public_nft_id = updatedlNftId[_poolNftId];
-        public_liquidityToRemove = _liquidityToRemove;
-        public_amount0Min = _amount0Min;
-        public_amount1Min = _amount1Min;
-        public_deadline = block.timestamp + deadline; 
-        // nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
 
-        totalLiquidity[updatedlNftId[_poolNftId]] = totalLiquidity[updatedlNftId[_poolNftId]] - _liquidityToRemove;
+        nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
+
+        (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(updatedlNftId[_poolNftId]);
+        uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
+
+        ///////////////// BEGIN: UPDATE LIQUIDITY MAPPINGS ////////////////////////
+        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
+        liquidityLastStateUpdate[_nftId] = statesCounter;
+
+        positionsNFT.updateLiquidityForUser(_nftId, _userLiquidity - _liquidityToRemove, statesCounter);
+
+        statesCounter++ ;
+
+        ////////////////// END: UPDATE LIQUIDITY MAPPINGS ////////////////////////
+   
+        collect(_token0, _token1, _fee);
+    }
+
+    function sweepToken(address _token, uint amount, address receiver) public {
+        nonfungiblePositionManager.sweepToken(_token, amount, receiver);
     }
 
     function collect(address _token0, address _token1, uint _fee) public {
@@ -4510,43 +4994,28 @@ contract YfSc{
 
     // rebalance --> burn nft and create new one for new position 
 
-    /// @notice Provide liquidity to a pair pool for a specified fee
-    /// @dev Internal function, called by mintNFT function
-    /// @param _token0 The first token of the liquidity pool pair
-    /// @param _token1 The second token of the liquidity pool pair
-    /// @param _fee The desired fee for the pool  
-    /// @param _amount The amount of tokens `account` will receive
-    /// @param _tokenToDeposit The amount of tokens `account` will receive
-    function provideLiquidityToUniswap(address _token0, address _token1, uint _fee, uint _tokenToDeposit, uint _amount) internal {
-        
+    /// @notice Computes the amount of liquidity received for a given amount of token0 and price range
+    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower))
+    /// @param _tickLower tick lower
+    /// @param _tickUpper tick upper
+    /// @param amount0 The amount0 being sent in
+    /// @return amount1 The amount of returned liquidity
+    function getAmount1ForAmount0(
+        int24 _tickLower,
+        int24 _tickUpper,
+        uint256 amount0
+    ) public pure returns (uint256 amount1) {
+        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower); //A sqrt price representing the first tick boundary
+        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper); //A sqrt price representing the second tick boundary
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
+        uint128 liquidity = toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
+        amount1 = FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        return amount1;
     }
+
     // add the fees 
     // in rebalance you take just the nft id 
     // user will select the pair he wants 
 
-    /// @notice Lock liquidity for a user
-    /// @dev Function can only be called by the contract's deployer
-    /// @param _user the liquidity provider to lock
-    /// @param _token0 The first token of the liquidity pool pair
-    /// @param _token1 The second token of the liquidity pool pair
-    /// @param _fee The desired fee for the pool  
-    function lockLiquidity(address _user, address _token0, address _token1, uint _fee) public {
-        
-    }
-
-    /// @notice Withdraw liquidity by user
-    /// @dev Function can be called by every liquidity provider
-    /// @param _user The address of the account that will receive the newly created tokens
-    /// @param _token0 The first token of the liquidity pool pair
-    /// @param _token1 The second token of the liquidity pool pair
-    /// @param _fee The desired fee for the pool  
-    /// @param _amount The amount of tokens `account` will receive
-    function withdrawLiquidity(address _user, address _token0, address _token1, uint _fee, uint _amount) public {   
-        
-    }
-
-    /// @notice Collect all fees for a user
-    /// @dev Function can be called by every liquidity provider
-    function collectFees() public {
-    }
 }
