@@ -239,17 +239,15 @@ contract YfSc{
     address public owner;
 
     /// fees distribution 
-    uint public statesCounter; 
+    uint public statesCounter = 1; 
 
     mapping(uint=>uint) public liquidityLastStateUpdate; // nft --> last State Update for liquidity for Uni3 NFT
 
-    mapping(uint => mapping(uint=>uint)) public liquidityStatesPerNft; // nft --> state --> amount 
-
-    /// Original uniswapNFT => total reward at statesCounter (for token0 and token1) 
-    mapping(uint => mapping(uint => uint)) public totalRewardReceivedAtStateForToken0; 
-    mapping(uint => mapping(uint => uint)) public totalRewardReceivedAtStateForToken1; 
-  
     mapping(uint => mapping(uint => uint128)) public totalLiquidityAtStateForNft; 
+
+    mapping(uint => mapping(uint => uint)) public statesIdsForNft;
+
+    mapping(uint => uint) public totalStatesForNft;
 
     int24 public tickLower = -27060; // -21960
     int24 public tickUpper = -25680; // -20820
@@ -382,7 +380,11 @@ contract YfSc{
                         );
             
             (uint256 tokenId, uint128 _liquidity , , ) = nonfungiblePositionManager.mint(mintParams);
-            originalPoolNftIds[_token0][_token1][_fee] = tokenId;
+            if (originalPoolNftIds[_token0][_token1][_fee] == 0 && originalPoolNftIds[_token1][_token0][_fee] == 0){
+                originalPoolNftIds[_token1][_token0][_fee] = tokenId;
+                originalPoolNftIds[_token0][_token1][_fee] = tokenId;
+            }
+
             poolNftIds[_token0][_token1][_fee] = tokenId;
 
             poolNftIds[_token1][_token0][_fee] = tokenId;
