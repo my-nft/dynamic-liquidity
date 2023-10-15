@@ -105,6 +105,12 @@ async function main() {
     { gasLimit: '1000000' }
   )
   await tx6.wait()
+
+  // const public_liquidityToRemove = await YfScContract.public_liquidityToRemove();
+  // const public_nftId = await YfScContract.public_nftId();
+
+  // console.log("public_liquidityToRemove: ", public_liquidityToRemove);
+  // console.log("public_nftId: ", public_nftId);
  
   console.log("done!")
 }

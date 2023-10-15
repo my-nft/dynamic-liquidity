@@ -139,7 +139,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     }
 
     function getStatesIdsForPosition(uint _userPositionNft, uint _stateId) public returns(uint id){
-        id = liquidityForUserInPoolAtState[_userPositionNft][_stateId];
+        id = statesIdsForPosition[_userPositionNft][_stateId];
         return id;
     }
 
@@ -273,6 +273,7 @@ contract YfSc{
     mapping(address => mapping(address => mapping(uint => uint))) public originalPoolNftIds; // [token0][token1][fee] = Original nft Id
 
     mapping(address => uint) public totalRewards;
+  
 
     /**
      * Contract initialization.
@@ -322,7 +323,7 @@ contract YfSc{
 
         collect(_token0, _token1, _fee);
 
-        decreaseLiquidity(_token0, _token1, _fee, 100);
+        decreaseLiquidity(_token0, _token1, _fee, 100, false);
 
         uint newBalanceToken0 = token0.balanceOf(address(this));
         uint newBalanceToken1 = token1.balanceOf(address(this));
@@ -349,8 +350,13 @@ contract YfSc{
         (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_nftId);
 
         totalLiquidityAtStateForNft[_nftId][oldStateCounter] = _liquidity; 
-        
-        // handle the risidual tokens not added to liquidity because of ratio difference 
+
+        statesIdsForNft[_originalPositionNft][totalStatesForNft[_originalPositionNft]] = statesCounter;
+        totalStatesForNft[_originalPositionNft]++;
+
+        liquidityLastStateUpdate[_originalPositionNft] = statesCounter;
+
+        statesCounter++ ;
     }
 
     function mintUni3Nft(
@@ -490,17 +496,20 @@ contract YfSc{
         uint userNft = positionsNFT.getUserNftPerPool(msg.sender, _nftId);
         positionsNFT.updateLiquidityForUser(userNft, _liquidityAdded, statesCounter);
 
+        statesIdsForNft[_nftId][totalStatesForNft[_nftId]] = statesCounter;
+        totalStatesForNft[_nftId]++;
+
         statesCounter++ ;
         liquidityLastDepositTime[userNft] = block.timestamp;
         ////////////////// END: UPDATE LIQUIDITY MAPPINGS ////////////////////////
     }
 
-    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage) public {
+    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _notYetpdated) public {
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
         uint _poolOriginalNftId = originalPoolNftIds[_token0][_token1][_fee];
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _poolOriginalNftId);
         require(liquidityLastDepositTime[_userNftId] < block.timestamp + liquidityLockTime, "liquidity locked !");
-        
+
         uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
         uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition);
         uint128 _userLiquidity = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
@@ -527,12 +536,20 @@ contract YfSc{
         uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
 
         ///////////////// BEGIN: UPDATE LIQUIDITY MAPPINGS ////////////////////////
-        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
-        liquidityLastStateUpdate[_nftId] = statesCounter;
+        if(_notYetpdated){
+            totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
+            liquidityLastStateUpdate[_nftId] = statesCounter;
 
-        positionsNFT.updateLiquidityForUser(_nftId, _userLiquidity - _liquidityToRemove, statesCounter);
+            positionsNFT.updateLiquidityForUser(_nftId, _userLiquidity - _liquidityToRemove, statesCounter);
+            
+            statesIdsForNft[_poolOriginalNftId][totalStatesForNft[_nftId]] = statesCounter;
+            totalStatesForNft[_poolOriginalNftId]++;
 
-        statesCounter++ ;
+            statesCounter++;
+        }
+
+// decrease liquidity updates the state vars, but it s not the final state, 
+// since they are updated again in update position, is it an issue ? what if we have to states ? 
 
         ////////////////// END: UPDATE LIQUIDITY MAPPINGS ////////////////////////
    
