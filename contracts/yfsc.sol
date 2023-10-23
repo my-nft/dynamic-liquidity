@@ -291,7 +291,7 @@ contract YfSc{
                                                        // LUR = { 1003, 980, 970, 850, 1050, 1090, 1100, 1200 }    
 
     int24 public tickLower = -27060; // -21960 
-    int24 public tickUpper = -25680; // -20820 
+    int24 public tickUpper = -24840 ; //-25680; // -20820 
     uint public deadline = 600; 
 
     uint public slippageToken0 = 500; // => 5 % 
@@ -326,6 +326,12 @@ contract YfSc{
     uint public public_newLiquidity;
 
     uint public public_amountOut;
+
+    uint public public_amount0;
+    uint public public_amount1;
+
+    int24 public  public_tickLower ;
+    int24 public  public_tickUpper;
   
     /**
      * Contract initialization.
@@ -338,6 +344,9 @@ contract YfSc{
         nonfungiblePositionManager = _nonfungiblePositionManager;
         iSwapRouter = _iSwapRouter;
         owner = msg.sender;
+
+        tickLower = -27060; 
+        tickUpper = -25680; 
     }
 
     // Modifier to check that the caller is the owner of
@@ -382,24 +391,78 @@ contract YfSc{
         uint newBalanceToken0 = token0.balanceOf(address(this));
         uint newBalanceToken1 = token1.balanceOf(address(this));
         
-
         uint _nftId = poolNftIds[_token0][_token1][_fee];
 
         poolNftIds[_token0][_token1][_fee] = 0;
 
+        // uint _amount0 = 7200737415669; //22579957097468; //newBalanceToken0;
+        uint _amount0 = newBalanceToken0;
+        uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
+        
+        public_amount0 = newBalanceToken0; //_amount0;
+        public_amount1 = newBalanceToken1; //_amount1;
+
+        public_tickLower = tickLower;
+        public_tickUpper = tickUpper;
+
         uint _amount0Min = newBalanceToken0 - newBalanceToken0 * slippageToken0 / quotient;
         uint _amount1Min = newBalanceToken1- newBalanceToken1 * slippageToken1 / quotient;
 
-        uint _amount0 = newBalanceToken0;
-        uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
- 
+        token0.transferFrom(msg.sender, address(this), _amount0);
+        token1.transferFrom(msg.sender, address(this), _amount1);
+
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         
         _amount0Min = 0 ; //_amount0 - _amount0 * slippageToken0 / quotient; 
         _amount1Min = 0 ; // _amount1 - _amount1 * slippageToken1 / quotient; 
-        mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+        // mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+        
+        /////////////////////////////// begin mint uni nft //////////////////////////////
+        MintParams memory mintParams;
+         // mintUni3Nft(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984, 
+        //                 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6, 
+        //                 3000, 
+        //                 -26040, 
+        //                 -24840, 
+        //                 22579957097468, 
+        //                 10000000000000, 
+        mintParams = MintParams(
+                    _token0, //_token0, 
+                    _token1, //_token1, 
+                    _fee, //_fee, 
+                    tickLower,  //tickLower, 
+                    tickUpper, //tickUpper, 
+                    _amount0, //_amount0, 
+                    _amount1, //_amount1, 
+                    0, //_amount0Min, 
+                    0, //_amount1Min, 
+                    address(this), 
+                    block.timestamp + deadline 
+                    );
+        uint256 tokenId;
+        (tokenId, , , ) = nonfungiblePositionManager.mint(mintParams);
 
+        if (originalPoolNftIds[_token0][_token1][_fee] == 0 && originalPoolNftIds[_token1][_token0][_fee] == 0){
+            originalPoolNftIds[_token1][_token0][_fee] = tokenId;
+            originalPoolNftIds[_token0][_token1][_fee] = tokenId;
+        }
+
+        poolNftIds[_token0][_token1][_fee] = tokenId;
+
+        poolNftIds[_token1][_token0][_fee] = tokenId;
+
+        //////////////////////// end mint uni nft /////////////////////////
+
+        // mintUni3Nft(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984, 
+        //                 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6, 
+        //                 3000, 
+        //                 -26040, 
+        //                 -24840, 
+        //                 22579957097468, 
+        //                 10000000000000, 
+        //                 0, 
+        //                 0);
 
         uint balanceToken0After = token0.balanceOf(address(this));
         uint balanceToken1After = token1.balanceOf(address(this));
@@ -594,7 +657,7 @@ contract YfSc{
             public_balanceToken1 = token1.balanceOf(address(this));
             token0.approve(address(nonfungiblePositionManager), public_balanceToken0);
             token1.approve(address(nonfungiblePositionManager), public_balanceToken1);
-            _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
+            _liquidityAdded += increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
         }
 
         if(newBalanceToken1 - oldBalanceToken1 > 0){
@@ -632,7 +695,7 @@ contract YfSc{
     }
 
     function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _notYetpdated) public {
-        collect(_token0, _token1, _fee);
+        
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
         uint _poolOriginalNftId = originalPoolNftIds[_token0][_token1][_fee];
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _poolOriginalNftId);
@@ -659,6 +722,7 @@ contract YfSc{
         ERC20 token1 = ERC20(_token1);
 
         nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
+        collect(_token0, _token1, _fee);
 
         (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
         uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
