@@ -60,7 +60,7 @@ module.exports = {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       chainId: 5,
-      accounts: [SEPOLIA_PRIVATE_KEY2, SEPOLIA_PRIVATE_KEY],
+      accounts: [SEPOLIA_PRIVATE_KEY, SEPOLIA_PRIVATE_KEY2],
       // gasPrice: 20000,
     }
   },
