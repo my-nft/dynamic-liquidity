@@ -401,7 +401,7 @@ contract YfSc{
 
     }
 
-    function collect(address _token0, address _token1, uint _fee) public {
+    function collect(address _token0, address _token1, uint _fee,  uint128 _tokensOwed0, uint128 _tokensOwed1) public {
 
     }
 
@@ -419,6 +419,9 @@ contract YfSc{
         uint256 amount0
     ) public pure returns (uint256 amount1) {
         return amount1;
+    }
+
+    function getPendingrewardForPosition(address _token0, address _token1, uint _fee) view public returns (uint reward0, uint reward1){
     }
 
     // add the fees 
