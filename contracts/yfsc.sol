@@ -12,6 +12,10 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+// import {PRBMathUD60x18} from "@prb/math/contracts/PRBMathUD60x18.sol";
+
+import "prb-math/contracts/PRBMathUD60x18.sol";
+
 import './FullMath.sol';
 import './FixedPoint96.sol';
 import './TickMath.sol';
@@ -375,11 +379,20 @@ contract YfSc{
     /// @dev external method to be called only by the owner 
     /// @param _tickLower lower price range tick
     /// @param _tickUpper upper roce range tick
-    function setTicks(int24 _tickLower, int24 _tickUpper) external onlyOwner{
+    function setTicks(int24 _tickLower, int24 _tickUpper) public onlyOwner{
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower);
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper);
         tickLower = _tickLower;
         tickUpper = _tickUpper;
+    }
+
+    function setRates(uint _lowerBound, uint _upperBound) public onlyOwner {
+        uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
+        uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
+
+        int24 _tickLower = TickMath.getTickAtSqrtRatio(sqrtPriceX96lower);
+        int24 _tickUpper = TickMath.getTickAtSqrtRatio(sqrtPriceX96upper);
+        setTicks(_tickLower, _tickUpper);
     }
 
     function currentTicksForPosition(address _token0, address _token1, uint _fee) view public returns (int24 _tickLower, int24 _tickUpper){
@@ -681,6 +694,8 @@ contract YfSc{
         uint _amount1Min = 0;
 
         uint128 _liquidityAdded;
+
+        // setRates(70000000000000000, 90000000000000000);
         
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
@@ -958,6 +973,91 @@ contract YfSc{
     // function checkTick(uint256 _tick) public view returns (uint160){
     //     return TickMath.getSqrtRatioAtTick(int24(int256(_tick)));
     // }
+
+    function checkTick(int24 _tick)public view returns (uint160){
+        return TickMath.getSqrtRatioAtTick(_tick);
+    }
+
+    function computeTick(uint160 sqrtPriceX96) public view returns (int24){
+        return -887220;
+        return TickMath.getTickAtSqrtRatio(sqrtPriceX96);
+    }
+
+    // function getPrice(address tokenIn, address tokenOut)
+    // external
+    // view
+    // returns (uint256 price)
+    // {
+    //     IUniswapV3Pool pool = IUniswapV3Pool(factory.getPool(tokenIn, tokenOut, FEE);
+    //     (uint160 sqrtPriceX96,,,,,,) =  pool.slot0();
+    //     return uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
+    // }
+
+    //   function sqrtPriceX96ToUint(uint160 sqrtPriceX96, uint8 decimalsToken0)
+    //     internal
+    //     pure
+    //     returns (uint256)
+    //   {
+    //     uint256 numerator1 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+    //     uint256 numerator2 = 10**decimalsToken0;
+    //     return FullMath.mulDiv(numerator1, numerator2, 1 << 192);
+    //   }
+
+    // function getQuoteFromSqrtRatioX96(
+    //     uint160 sqrtRatioX96, // same as sqrtPriceX96
+    //     uint128 baseAmount,
+    //     bool inverse
+    // ) internal pure returns (uint256 quoteAmount) {
+    //     // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
+    //     if (sqrtRatioX96 <= type(uint128).max) {
+    //         uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+    //         quoteAmount = !inverse
+    //             ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
+    //             : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+    //     } else {
+    //         uint256 ratioX128 = FullMath.mulDiv(
+    //             sqrtRatioX96,
+    //             sqrtRatioX96,
+    //             1 << 64
+    //         );
+    //         quoteAmount = !inverse
+    //             ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
+    //             : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
+    //     }
+    // }
+
+    function _sqrt(uint _x) internal pure returns(uint y) {
+        uint z = (_x + 1) / 2;
+        y = _x;
+        while (z < y) {
+            y = z;
+            z = (_x / z + z) / 2;
+        }
+    }
     
+    function getSqrtPriceX96(uint priceA, uint priceB) public view returns (uint) {
+        uint ratioX192 = (priceA << 192) / priceB;
+        return _sqrt(ratioX192);
+    }
+
+    // function sqrtPriceX96ToUint(uint160 sqrtPriceX96, uint8 decimalsToken0)
+    // internal
+    // pure
+    // returns (uint256)
+    // {
+    //     uint256 numerator1 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+    //     uint256 numerator2 = 10**decimalsToken0;
+    //     return FullMath.mulDiv(numerator1, numerator2, 1 << 192);
+    // }
+    
+    // sqrtPriceX96 = sqrt(price) * 2 ** 96
+    // # divide both sides by 2 ** 96
+    // sqrtPriceX96 / (2 ** 96) = sqrt(price)
+    // # square both sides
+    // (sqrtPriceX96 / (2 ** 96)) ** 2 = price
+    // # expand the squared fraction
+    // (sqrtPriceX96 ** 2) / ((2 ** 96) ** 2)  = price
+    // # multiply the exponents in the denominator to get the final expression
+    // sqrtRatioX96 ** 2 / 2 ** 192 = price
 
 }

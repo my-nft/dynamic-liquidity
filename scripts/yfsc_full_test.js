@@ -37,11 +37,43 @@ async function main() {
   YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2[0]);
   YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, ISWAP_ROUTER);
   
+  const tx01 = await YfScContract.connect(signer2[0]).setRates(
+    "70000000000000000", 
+    "90000000000000000", 
+    { gasLimit: '2000000' }
+  )
+  await tx01.wait()
+
+  // const tx001 = await YfScContract.connect(signer2[0]).setTicks(
+  //   // "-21960",
+  //   "-55512500",
+  //   "-55009900",
+  //   // "-27060",
+  //   // "-20820",
+  //   { gasLimit: '1000000' }
+  // )
+  // await tx001.wait()
+
+  var tickUpper = await YfScContract.connect(signer2[0]).tickUpper();
+  console.log("tickUpper: ", tickUpper);
+
+  var tickLower = await YfScContract.connect(signer2[0]).tickLower();
+  console.log("tickLower: ", tickLower);
+
+  return;
+
+  // const sqrtPriceToPrice = (sqrtPriceX96, token0Decimals, token1Decimals) => {
+  //   let mathPrice = Number(sqrtPriceX96) ** 2 / 2 ** 192;
+  //   const decimalAdjustment = 10 ** (token0Decimals - token1Decimals);
+  //   const price = mathPrice * decimalAdjustment;
+  //   return price;
+  // };
   
-//   const checkTick1 = await YfScContract.connect(signer2[1]).checkTick("-26040")
-//   console.log("checkTick1: ", checkTick1);
-//   const checkTick2 = await YfScContract.connect(signer2[1]).checkTick("-24840")
-//   console.log("checkTick2: ", checkTick2);
+  // const tick1 = await YfScContract.connect(signer2[1]).computeTick("1000000000000000000")
+  // console.log("tick1: ", tick1);
+  // const tick2 = await YfScContract.connect(signer2[1]).computeTick("4300000000000000000")
+  // console.log("tick2: ", tick2);
+  // return;
   const tx = await PositionsNFTContract.connect(signer2[0]).grantRole(
     MINTER_ROLE, YfScContract.target,
     { gasLimit: '1000000' }
@@ -74,29 +106,29 @@ async function main() {
   )
   await tx0.wait()
 
-//   const tx110 = await YfScContract.connect(signer2[0]).mintNFT(
-//     UNI_ADDRESS, 
-//     WETH_ADDRESS, 
-//     "3000", 
-//     "92265983778560538",
-//     "1000000000000000", 
-//     // "9226598377856050",
-//     // "1000000000000000", 
-//     { gasLimit: '2000000' }
-//   )
-//   await tx110.wait()
+  const tx110 = await YfScContract.connect(signer2[0]).mintNFT(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "92265983778560538",
+    "1000000000000000", 
+    // "9226598377856050",
+    // "1000000000000000", 
+    { gasLimit: '2000000' }
+  )
+  await tx110.wait()
 
-//   const tx10 = await YfScContract.connect(signer2[0]).mintNFT(
-//     UNI_ADDRESS, 
-//     WETH_ADDRESS, 
-//     "3000", 
-//     "92265983778560538",
-//     "1000000000000000", 
-//     // "9226598377856050",
-//     // "1000000000000000", 
-//     { gasLimit: '2000000' }
-//   )
-//   await tx10.wait()
+  const tx10 = await YfScContract.connect(signer2[0]).mintNFT(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "92265983778560538",
+    "1000000000000000", 
+    // "9226598377856050",
+    // "1000000000000000", 
+    { gasLimit: '2000000' }
+  )
+  await tx10.wait()
 
   const tx1 = await YfScContract.connect(signer2[1]).mintNFT(
     UNI_ADDRESS, 
@@ -108,15 +140,15 @@ async function main() {
   )
   await tx1.wait()
 
-//   const tx11 = await YfScContract.connect(signer2[1]).mintNFT(
-//     UNI_ADDRESS, 
-//     WETH_ADDRESS, 
-//     "3000", 
-//     "9226598377856053",
-//     "100000000000000", 
-//     { gasLimit: '2000000' }
-//   )
-//   await tx11.wait()
+  const tx11 = await YfScContract.connect(signer2[1]).mintNFT(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "9226598377856053",
+    "100000000000000", 
+    { gasLimit: '2000000' }
+  )
+  await tx11.wait()
 
   const swapParams = {
     tokenIn: UNI_ADDRESS,
@@ -160,45 +192,44 @@ async function main() {
   )
   await tx4.wait()
 
-const uniNftId = await YfScContract.connect(signer2[0]).poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
-console.log("uniNftId: ", uniNftId);
-const positionNftId1 = await PositionsNFTContract.connect(signer2[0]).getUserNftPerPool("0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0", uniNftId)
-const positionNftId2 = await PositionsNFTContract.connect(signer2[0]).getUserNftPerPool("0xD54f6DBde8E90DB546a0Af3bB4d27DFDe0a269ff", uniNftId)
-console.log("positionNftId1: ", positionNftId1);
-console.log("positionNftId2: ", positionNftId2);
-const totalStatesForPosition1 = await PositionsNFTContract.connect(signer2[0]).totalStatesForPosition(positionNftId1)
-const totalStatesForPosition2 = await PositionsNFTContract.connect(signer2[0]).totalStatesForPosition(positionNftId2)
-console.log("totalStatesForPosition1: ", totalStatesForPosition1);
-console.log("totalStatesForPosition2: ", totalStatesForPosition2);
-console.log("");
-console.log("liquidity for position ------> ", positionNftId1)
-for(var  ind = 0; ind <= parseInt(totalStatesForPosition1); ind++){
-  console.log("position state id   : ", ind);
-  var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId1, ind);
-  console.log("global state id     : ", stateIdForPosition);
-  var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId1, stateIdForPosition);
-  console.log("liquidityAtState    : ", liquidityAtState);
-  var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
-  console.log("poolLiquidityAtState: ", poolLiquidityAtState);
-}
-console.log("");
-console.log("liquidity for position ------> ", positionNftId2)
-for(var  ind = 0; ind <= parseInt(totalStatesForPosition2); ind++){
-  console.log("position state id   : ", ind);
-  var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId2, ind);
-  console.log("global state id     : ", stateIdForPosition);
-  var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId2, stateIdForPosition);
-  console.log("liquidityAtState    : ", liquidityAtState);
-  var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
-  console.log("poolLiquidityAtState: ", poolLiquidityAtState);
-}
+  const uniNftId = await YfScContract.connect(signer2[0]).poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
+  console.log("uniNftId: ", uniNftId);
+  const positionNftId1 = await PositionsNFTContract.connect(signer2[0]).getUserNftPerPool("0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0", uniNftId)
+  const positionNftId2 = await PositionsNFTContract.connect(signer2[0]).getUserNftPerPool("0xD54f6DBde8E90DB546a0Af3bB4d27DFDe0a269ff", uniNftId)
+  console.log("positionNftId1: ", positionNftId1);
+  console.log("positionNftId2: ", positionNftId2);
+  const totalStatesForPosition1 = await PositionsNFTContract.connect(signer2[0]).totalStatesForPosition(positionNftId1)
+  const totalStatesForPosition2 = await PositionsNFTContract.connect(signer2[0]).totalStatesForPosition(positionNftId2)
+  console.log("totalStatesForPosition1: ", totalStatesForPosition1);
+  console.log("totalStatesForPosition2: ", totalStatesForPosition2);
+  console.log("");
+  console.log("liquidity for position ------> ", positionNftId1)
+  for(var  ind = 0; ind <= parseInt(totalStatesForPosition1); ind++){
+    console.log("position state id   : ", ind);
+    var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId1, ind);
+    console.log("global state id     : ", stateIdForPosition);
+    var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId1, stateIdForPosition);
+    console.log("liquidityAtState    : ", liquidityAtState);
+    var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
+    console.log("poolLiquidityAtState: ", poolLiquidityAtState);
+  }
+  console.log("");
+  console.log("liquidity for position ------> ", positionNftId2)
+  for(var  ind = 0; ind <= parseInt(totalStatesForPosition2); ind++){
+    console.log("position state id   : ", ind);
+    var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId2, ind);
+    console.log("global state id     : ", stateIdForPosition);
+    var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId2, stateIdForPosition);
+    console.log("liquidityAtState    : ", liquidityAtState);
+    var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
+    console.log("poolLiquidityAtState: ", poolLiquidityAtState);
+  }
 
-const pendingrewardForPosition1 = await YfScContract.connect(signer2[0]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
-console.log("pendingrewardForPosition1: ", pendingrewardForPosition1);
+  const pendingrewardForPosition1 = await YfScContract.connect(signer2[0]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
+  console.log("pendingrewardForPosition1: ", pendingrewardForPosition1);
 
-const pendingrewardForPosition2 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
-console.log("pendingrewardForPosition2: ", pendingrewardForPosition2);
-
+  const pendingrewardForPosition2 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
+  console.log("pendingrewardForPosition2: ", pendingrewardForPosition2);
 
 }
 
