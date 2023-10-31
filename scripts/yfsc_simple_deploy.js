@@ -39,45 +39,6 @@ async function main() {
   console.log("YfScContract address: ", YfScContract.target);
   console.log("PositionsNFTContract address: ", PositionsNFTContract.target);
 
-  const wethContract = new Contract(WETH_ADDRESS,artifacts.WETH.abi,provider)
-  const uniContract = new Contract(UNI_ADDRESS,artifacts.UNI.abi,provider)
-
-  await wethContract.connect(signer2[0]).approve(YfScContract.target, ethers.parseEther("1000"))
-  await uniContract.connect(signer2[0]).approve(YfScContract.target, ethers.parseEther("1000"))
-
-  let deadline = Math.floor(Date.now() / 1000) + (60 * 10); 
-
-  const tx1 = await YfScContract.connect(signer2[0]).mintNFT(
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000", 
-    "92265983778560538",
-    "1000000000000000", 
-    // "9226598377856050",
-    // "1000000000000000", 
-    { gasLimit: '2000000' }
-  )
-  await tx1.wait()
-
-
-  const tx2 = await YfScContract.connect(signer2[0]).setTicks(
-    // "-21960",
-    "-26040",
-    "-24840",
-    { gasLimit: '1000000' }
-  )
-  await tx2.wait()
-
-
-  const tx3 = await YfScContract.connect(signer2[0]).updatePosition( 
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000",  
-    { gasLimit: '1000000'} 
-  ) 
-  await tx3.wait() 
-  console.log("update position: ", tx3); 
-
 }
 
 /*
