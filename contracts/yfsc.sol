@@ -419,7 +419,7 @@ contract YfSc{
     }
 
     // function setRates(uint _lowerBound, uint _upperBound, address _token0, address _token1, uint24 _fee, int24 _positionWidth) public onlyOwner {
-    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksNumber) public onlyOwner {
+    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) public onlyOwner {
 
         // uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
         // uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
@@ -437,7 +437,7 @@ contract YfSc{
 
         int24 tickCeil = tickFloor + tickSpacing;
 
-        setTicks(tickFloor - _ticksNumber * tickSpacing, tickCeil + _ticksNumber * tickSpacing);
+        setTicks(tickFloor - _ticksDown * tickSpacing, tickCeil + _ticksUp * tickSpacing);
 
         // int24 tick = getTick();
         // int24 tickFloor = _floor(tick);
