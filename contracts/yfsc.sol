@@ -200,6 +200,8 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
 
 contract NonfungiblePositionManager {
 
+    address public factory;
+
     function mint(MintParams calldata params)
         external
         payable
@@ -258,6 +260,36 @@ contract NonfungiblePositionManager {
             uint128 tokensOwed1
         )
     {}
+}
+
+contract Factory {
+
+    // mapping(address => mapping(address => mapping(uint24 => address))) public  getPool;
+    function getPool(address _token0, address _token1, uint24 _fee) public returns (address) {}
+}
+
+contract Pool {
+        struct Slot0 {
+        // the current price
+        uint160 sqrtPriceX96;
+        // the current tick
+        int24 tick;
+        // the most-recently updated index of the observations array
+        uint16 observationIndex;
+        // the current maximum number of observations that are being stored
+        uint16 observationCardinality;
+        // the next maximum number of observations to store, triggered in observations.write
+        uint16 observationCardinalityNext;
+        // the current protocol fee as a percentage of the swap fee taken on withdrawal
+        // represented as an integer denominator (1/x)%
+        uint8 feeProtocol;
+        // whether the pool is locked
+        bool unlocked;
+    }
+    
+    Slot0 public slot0;
+
+    int24 public tickSpacing;
 }
 
 /// @title YF SC : dynamic liquidity for uniswap V3
@@ -386,13 +418,41 @@ contract YfSc{
         tickUpper = _tickUpper;
     }
 
-    function setRates(uint _lowerBound, uint _upperBound) public onlyOwner {
-        uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
-        uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
+    // function setRates(uint _lowerBound, uint _upperBound, address _token0, address _token1, uint24 _fee, int24 _positionWidth) public onlyOwner {
+    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) public onlyOwner {
 
-        int24 _tickLower = TickMath.getTickAtSqrtRatio(sqrtPriceX96lower);
-        int24 _tickUpper = TickMath.getTickAtSqrtRatio(sqrtPriceX96upper);
-        setTicks(_tickLower, _tickUpper);
+        // uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
+        // uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
+
+        // var tokenPrice0 = sqrtPriceX96 ** 2 / 2 ** 192; //token0
+        // var tokenPrice1 = 2 ** 192 / sqrtPriceX96 ** 2; // WETH
+        address _factoryAddress = nonfungiblePositionManager.factory();
+        Factory _factory = Factory(_factoryAddress);
+        address _poolAddress = _factory.getPool(_token0, _token1, _fee);
+        Pool pool = Pool(_poolAddress);
+        (, int24 tick, , , , , ) = pool.slot0();
+        int24 tickSpacing = pool.tickSpacing();
+
+        int24 tickFloor = _floor(tick, tickSpacing);
+
+        int24 tickCeil = tickFloor + tickSpacing;
+
+        setTicks(tickFloor - _ticksDown * tickSpacing, tickCeil + _ticksUp * tickSpacing);
+
+        // int24 tick = getTick();
+        // int24 tickFloor = _floor(tick);
+        // int24 tickCeil = tickFloor + tickSpacing;
+
+        // tickFloor - _baseThreshold,
+        // tickCeil + _baseThreshold,
+        // tickFloor - _limitThreshold,
+
+        // uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
+        // uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
+
+        // int24 _tickLower = TickMath.getTickAtSqrtRatio(sqrtPriceX96lower);
+        // int24 _tickUpper = TickMath.getTickAtSqrtRatio(sqrtPriceX96upper);
+        // setTicks(_tickLower, _tickUpper);
     }
 
     function currentTicksForPosition(address _token0, address _token1, uint _fee) view public returns (int24 _tickLower, int24 _tickUpper){
@@ -1059,5 +1119,13 @@ contract YfSc{
     // (sqrtPriceX96 ** 2) / ((2 ** 96) ** 2)  = price
     // # multiply the exponents in the denominator to get the final expression
     // sqrtRatioX96 ** 2 / 2 ** 192 = price
+
+    /// @dev Rounds tick down towards negative infinity so that it's a multiple
+    /// of `tickSpacing`.
+    function _floor(int24 tick, int24 tickSpacing) internal view returns (int24) {
+        int24 compressed = tick / tickSpacing;
+        if (tick < 0 && tick % tickSpacing != 0) compressed--;
+        return compressed * tickSpacing;
+    }
 
 }
