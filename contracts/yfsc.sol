@@ -418,14 +418,7 @@ contract YfSc{
         tickUpper = _tickUpper;
     }
 
-    // function setRates(uint _lowerBound, uint _upperBound, address _token0, address _token1, uint24 _fee, int24 _positionWidth) public onlyOwner {
     function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) public onlyOwner {
-
-        // uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
-        // uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
-
-        // var tokenPrice0 = sqrtPriceX96 ** 2 / 2 ** 192; //token0
-        // var tokenPrice1 = 2 ** 192 / sqrtPriceX96 ** 2; // WETH
         address _factoryAddress = nonfungiblePositionManager.factory();
         Factory _factory = Factory(_factoryAddress);
         address _poolAddress = _factory.getPool(_token0, _token1, _fee);
@@ -438,21 +431,6 @@ contract YfSc{
         int24 tickCeil = tickFloor + tickSpacing;
 
         setTicks(tickFloor - _ticksDown * tickSpacing, tickCeil + _ticksUp * tickSpacing);
-
-        // int24 tick = getTick();
-        // int24 tickFloor = _floor(tick);
-        // int24 tickCeil = tickFloor + tickSpacing;
-
-        // tickFloor - _baseThreshold,
-        // tickCeil + _baseThreshold,
-        // tickFloor - _limitThreshold,
-
-        // uint160 sqrtPriceX96lower = uint160(_sqrt(_lowerBound) * 2 ** 96);
-        // uint160 sqrtPriceX96upper = uint160(_sqrt(_upperBound) * 2 ** 96);
-
-        // int24 _tickLower = TickMath.getTickAtSqrtRatio(sqrtPriceX96lower);
-        // int24 _tickUpper = TickMath.getTickAtSqrtRatio(sqrtPriceX96upper);
-        // setTicks(_tickLower, _tickUpper);
     }
 
     function currentTicksForPosition(address _token0, address _token1, uint _fee) view public returns (int24 _tickLower, int24 _tickUpper){
