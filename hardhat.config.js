@@ -10,7 +10,8 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 // To export your private key from Metamask, open Metamask and
 // go to Account Details > Export Private Key
 // Beware: NEVER put real Ether into testing accounts
-const WALLET_PRIVATE_KEY = "";
+const SEPOLIA_PRIVATE_KEY2 = "";
+const SEPOLIA_PRIVATE_KEY = "";
 
 module.exports = {
   solidity: {
@@ -59,54 +60,9 @@ module.exports = {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       chainId: 5,
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    bsc: {
-      url: "https://binance.llamarpc.com",
-      chainId: 56, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    arbitrum: {
-      url: "https://arbitrum.llamarpc.com",
-      chainId: 42161, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    optimism: {
-      url: "https://optimism.llamarpc.com",
-      chainId: 10, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    polygon: {
-      url: "https://polygon.llamarpc.com",
-      chainId: 137, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    base: {
-      url: "https://base.llamarpc.com",
-      chainId: 8453, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    sepolia: {
-      url: "https://sepolia.publicgoods.network",
-      chainId: 58008, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    celo: {
-      url: "https://1rpc.io/celo",
-      chainId: 42220, 
-      accounts: [WALLET_PRIVATE_KEY],
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
-      chainId: 5,
-      accounts: [WALLET_PRIVATE_KEY],
+      accounts: [SEPOLIA_PRIVATE_KEY, SEPOLIA_PRIVATE_KEY2],
       // gasPrice: 20000,
-    },
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      chainId: 1,
-      accounts: [WALLET_PRIVATE_KEY],
-    },
+    }
   },
   etherscan: {
     // Your API key for Etherscan

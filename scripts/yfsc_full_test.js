@@ -42,6 +42,7 @@ async function main() {
     WETH_ADDRESS,
     "3000",
     "1",
+    "2",
     { gasLimit: '2000000' }
   )
   await tx01.wait()
@@ -211,7 +212,8 @@ async function main() {
     UNI_ADDRESS,
     WETH_ADDRESS,
     "3000",
-    "40",
+    "4",
+    "5",
     { gasLimit: '2000000' }
   )
   await tx00.wait()
