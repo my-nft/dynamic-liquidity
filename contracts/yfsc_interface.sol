@@ -386,7 +386,7 @@ contract YfSc{
 
         tickLower = -887220;
         tickUpper = 887220;
-
+ 
     }
 
     // Modifier to check that the caller is the owner of
