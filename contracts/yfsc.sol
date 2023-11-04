@@ -20,7 +20,6 @@ import './FullMath.sol';
 import './FixedPoint96.sol';
 import './TickMath.sol';
 import './ISwapRouter.sol';
-import "hardhat/console.sol";
 
 struct IncreaseLiquidityParams {
     uint256 tokenId;
