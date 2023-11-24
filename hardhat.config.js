@@ -11,6 +11,7 @@ const INFURA_API_KEY = "b6271a54103e430fbc6d2ec56ff98755";
 // go to Account Details > Export Private Key
 // Beware: NEVER put real Ether into testing accounts
 const SEPOLIA_PRIVATE_KEY2 = "";
+
 const SEPOLIA_PRIVATE_KEY = "";
 
 module.exports = {

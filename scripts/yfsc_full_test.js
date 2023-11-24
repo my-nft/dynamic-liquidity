@@ -238,7 +238,7 @@ async function main() {
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000",  
-    { gasLimit: '1000000' } 
+    { gasLimit: '2000000' } 
   ) 
   await tx02.wait() 
   console.log("update position: ", tx02); 

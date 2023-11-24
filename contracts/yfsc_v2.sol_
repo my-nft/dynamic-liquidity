@@ -1,0 +1,160 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+contract LiquidityManager is ERC721, Ownable {
+    using SafeMath for uint256;
+
+    struct PoolInfo {
+        IUniswapV3Pool pool;
+        INonfungiblePositionManager positionManager;
+        address token0;
+        address token1;
+        uint24 fee;
+        uint256 stateCounter; // Counter to track the state of the pool
+        mapping(uint256 => uint256) poolRewards; // Snapshot of pool rewards at each state
+    }
+
+    struct UserInfo {
+        uint256 depositAmount;
+        uint256 lastRewards;
+        uint256 lastClaimState;
+    }
+
+    // Mapping to store user deposits for each pool
+    mapping(address => mapping(uint256 => UserInfo)) public userInfo;
+
+    // Mapping to store whether a pool exists or not
+    mapping(address => bool) public poolExists;
+
+    // Event to track deposit, withdrawal, and reward claiming
+    event Deposit(uint256 tokenId, address pool, uint256 amount);
+    event Withdrawal(uint256 tokenId, address pool, uint256 amount);
+    event ClaimRewards(uint256 tokenId, address pool, uint256 rewards);
+
+    // Mapping to store state counters for each pool
+    mapping(address => uint256) public poolStateCounters;
+
+    constructor() ERC721("LiquidityNFT", "LQNFT") {}
+
+    // Function to deposit liquidity
+    function deposit(address poolAddress, uint256 amount) external {
+        PoolInfo storage poolInfo = pools[poolAddress];
+        require(poolInfo.pool != IUniswapV3Pool(0), "Pool not registered");
+        require(amount > 0, "Amount must be greater than 0");
+
+        // Transfer ERC20 tokens to this contract
+        IERC20(poolInfo.token0).transferFrom(msg.sender, address(this), amount);
+
+        // Mint an NFT for the user
+        uint256 tokenId = totalSupply() + 1;
+        _mint(msg.sender, tokenId);
+
+        // Update user deposits and last rewards for the specified pool
+        userInfo[poolAddress][tokenId].depositAmount = amount;
+        userInfo[poolAddress][tokenId].lastRewards = _calculateRewards(poolInfo, tokenId);
+        userInfo[poolAddress][tokenId].lastClaimState = poolStateCounters[poolAddress];
+
+        // Increase liquidity in Uniswap pool
+        _increaseLiquidity(poolInfo, amount);
+
+        // Calculate rewards for the user at the deposit state
+        _collectRewards(poolInfo, tokenId);
+
+        emit Deposit(tokenId, poolAddress, amount);
+    }
+
+    // Function to withdraw liquidity
+    function withdraw(address poolAddress, uint256 tokenId) external {
+        PoolInfo storage poolInfo = pools[poolAddress];
+        require(poolInfo.pool != IUniswapV3Pool(0), "Pool not registered");
+        require(ownerOf(tokenId) == msg.sender, "Not the owner of the NFT");
+        uint256 amount = userInfo[poolAddress][tokenId].depositAmount;
+
+        // Burn NFT
+        _burn(tokenId);
+
+        // Decrease liquidity in Uniswap pool
+        _decreaseLiquidity(poolInfo, amount);
+
+        // Collect rewards
+        _collectRewards(poolInfo, tokenId);
+
+        // Transfer ERC20 tokens to the user
+        IERC20(poolInfo.token0).transfer(msg.sender, amount);
+
+        emit Withdrawal(tokenId, poolAddress, amount);
+    }
+
+    // Function to claim rewards
+    function claimRewards(address poolAddress, uint256 tokenId) external {
+        PoolInfo storage poolInfo = pools[poolAddress];
+        require(poolInfo.pool != IUniswapV3Pool(0), "Pool not registered");
+        require(ownerOf(tokenId) == msg.sender, "Not the owner of the NFT");
+
+        // Collect rewards
+        _collectRewards(poolInfo, tokenId);
+
+        uint256 rewards = userInfo[poolAddress][tokenId].lastRewards;
+        require(rewards > 0, "No rewards to claim");
+
+        // Transfer rewards to the user
+        IERC20(poolInfo.token0).transfer(msg.sender, rewards);
+
+        emit ClaimRewards(tokenId, poolAddress, rewards);
+    }
+
+    // Internal function to collect rewards
+    function _collectRewards(PoolInfo storage poolInfo, uint256 tokenId) internal {
+        uint256 lastClaimState = userInfo[address(poolInfo.pool)][tokenId].lastClaimState;
+
+        // Collect rewards for each state between the last claim and the current state
+        for (uint256 state = lastClaimState; state < poolStateCounters[poolAddress]; state++) {
+            poolInfo.poolRewards[state] = _calculatePoolRewards(poolInfo, state);
+        }
+
+        userInfo[address(poolInfo.pool)][tokenId].lastRewards = _calculateRewards(poolInfo, tokenId);
+        userInfo[address(poolInfo.pool)][tokenId].lastClaimState = poolStateCounters[poolAddress];
+    }
+
+    // Internal function to calculate rewards for a user
+    function _calculateRewards(PoolInfo storage poolInfo, uint256 tokenId) internal view returns (uint256) {
+        uint256 rewards = userInfo[address(poolInfo.pool)][tokenId].lastRewards;
+
+        // Calculate user share at each state and add to rewards
+        for (uint256 state = userInfo[address(poolInfo.pool)][tokenId].lastClaimState; state < poolStateCounters[poolInfo.pool]; state++) {
+            uint256 userShare = (userInfo[address(poolInfo.pool)][tokenId].depositAmount * 1e18) / poolInfo.poolRewards[state];
+            rewards += (userShare * poolInfo.poolRewards[state]) / 1e18;
+        }
+
+        return rewards;
+    }
+
+    // Internal function to calculate total rewards for the pool at a specific state
+    function _calculatePoolRewards(PoolInfo storage poolInfo, uint256 state) internal view returns (uint256) {
+        // Replace this with your logic to calculate pool rewards at a specific state
+        // Example: return someFunction(poolInfo, state);
+        // For simplicity, returning a fixed value for demonstration purposes
+        return 1000;
+    }
+
+    // Internal function to increase liquidity in Uniswap pool
+    function _increaseLiquidity(PoolInfo storage poolInfo, uint256 amount) internal {
+        // Replace this with your logic to increase liquidity
+        // Example: callSomeFunction(poolInfo, amount);
+        // For simplicity, not implementing the actual logic
+    }
+
+    // Internal function to decrease liquidity in Uniswap pool
+    function _decreaseLiquidity(PoolInfo storage poolInfo, uint256 amount) internal {
+        // Replace this with your logic to decrease liquidity
+        // Example: callSomeFunction(poolInfo, amount);
+        // For simplicity, not implementing the actual logic
+    }
+}
