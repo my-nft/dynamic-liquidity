@@ -732,85 +732,79 @@ contract YfSc{
 
         uint128 _liquidityAdded;
 
-        // setRates(70000000000000000, 90000000000000000);
-        
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
             _liquidityAdded = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
         }else{
+            collect(_token0, _token1, _fee, 0, 0);
             _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }  
+        
+        _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1);
+        updateStateVariables(_token0, _token1, _fee, _liquidityAdded);
 
-        collect(_token0, _token1, _fee, 0, 0);
+    }
 
+    function swapAndLiquify(address _token0, address _token1, uint24 _fee, uint half) internal returns (uint128){
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1); 
+        ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
+        _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
+            _token0, 
+            _token1, 
+            _fee, 
+            address(this), 
+            block.timestamp + deadline,
+            half,
+            0,
+            0
+        );
+
+        token0.approve(address(iSwapRouter), half);
+        uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
+        uint _amountMin = 0; 
+
+        token0.approve(address(nonfungiblePositionManager), half);
+        token1.approve(address(nonfungiblePositionManager), amountOut);
+        return increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
+    }
+
+
+    function handleExess(address _token0, address _token1, uint24 _fee, uint128 _liquidityAdded, uint _oldBalanceToken0, uint _oldBalanceToken1) internal returns (uint128){
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1); 
         uint newBalanceToken0 = token0.balanceOf(address(this));
         uint newBalanceToken1 = token1.balanceOf(address(this));
-
-        if(newBalanceToken0 - oldBalanceToken0 > 0){
-            uint half = (newBalanceToken0 - oldBalanceToken0)/2;
-             _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
-                _token0, 
-                _token1, 
-                _fee, 
-                address(this), 
-                block.timestamp + deadline,
-                half,
-                0,
-                0
-            );
-
-            token0.approve(address(iSwapRouter), half);
-            uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
-            uint _amountMin = 0; 
-        
-            token0.approve(address(nonfungiblePositionManager), half);
-            token1.approve(address(nonfungiblePositionManager), amountOut);
-            _liquidityAdded += increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
+        if(newBalanceToken0 - _oldBalanceToken0 > 0){
+            _liquidityAdded += swapAndLiquify(_token0, _token1, _fee, (newBalanceToken0 - _oldBalanceToken0)/2);
+        }else if(newBalanceToken1 - _oldBalanceToken1 > 0){
+            _liquidityAdded += swapAndLiquify(_token1, _token0, _fee, (newBalanceToken1 - _oldBalanceToken1)/2);  
         }
+        return _liquidityAdded;
+    }
 
-        if(newBalanceToken1 - oldBalanceToken1 > 0){
-            uint half = (newBalanceToken1 - oldBalanceToken1)/2;
-             _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
-                _token1, 
-                _token0, 
-                _fee, 
-                address(this), 
-                block.timestamp + deadline,
-                half,
-                0,
-                0
-            );
+    function updateStateVariables(address _token0, address _token1, uint24 _fee, uint128 _liquidityAdded) internal {
 
-            token1.approve(address(iSwapRouter), half);
-            uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
-            uint _amountMin = 0; 
-        
-            token1.approve(address(nonfungiblePositionManager), half);
-            token0.approve(address(nonfungiblePositionManager), amountOut);
-            _liquidityAdded += increaseUni3Nft(_token0, _token1, _fee, amountOut, half, _amountMin, _amountMin);
-        }
-
-        oldBalanceToken0 = token0.balanceOf(address(this));
-        oldBalanceToken1 = token1.balanceOf(address(this));
         uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
-        (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
-    
-        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
 
-        // totalLiquidityAtStateForNft[_nftId][statesCounter] += _liquidityAdded; 
-        liquidityLastStateUpdate[_nftId] = statesCounter;
+        (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
 
         uint userNft = positionsNFT.getUserNftPerPool(msg.sender, _nftId);
         positionsNFT.updateLiquidityForUser(userNft, _liquidityAdded, statesCounter);
-        
+
+        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
+
+        liquidityLastStateUpdate[_nftId] = statesCounter;
 
         statesIdsForNft[_nftId][totalStatesForNft[_nftId]] = statesCounter;
         totalStatesForNft[_nftId]++;
 
         statesCounter++ ;
+
         liquidityLastDepositTime[userNft] = block.timestamp;
     }
+
 
     /// @notice Allow user to withdraw liquidity from a given position, 
     /// It will burn the liquidity and send the tokens to the depositer
@@ -928,6 +922,7 @@ contract YfSc{
         uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee]; // get first pool nft id 
         uint _poolNftId = poolNftIds [_token0][_token1][_fee]; // get first pool nft id 
         uint _userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
+        if (_userPositionNft == 0) return;
 
         CollectParams memory collectParams;
 

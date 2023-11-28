@@ -4106,13 +4106,6 @@ pragma solidity ^0.8.9;
 
 
 
-
-
-// import {PRBMathUD60x18} from "@prb/math/contracts/PRBMathUD60x18.sol";
-
-
-
-
 struct IncreaseLiquidityParams {
     uint256 tokenId;
     uint256 amount0Desired;
@@ -4169,26 +4162,6 @@ struct ExactInputSingleParams {
         uint160 sqrtPriceLimitX96;
     }
 
-// details about the uniswap position
-// struct Univ3Position {
-//     // the nonce for permits
-//     uint96 nonce; 
-//     // the address that is approved for spending this token
-//     address operator;
-//     // the ID of the pool with which this token is connected
-//     uint80 poolId;
-//     // the tick range of the position
-//     int24 tickLower;
-//     int24 tickUpper;
-//     // the liquidity of the position
-//     uint128 liquidity;
-//     // the fee growth of the aggregate position as of the last action on the individual position
-//     uint256 feeGrowthInside0LastX128;
-//     uint256 feeGrowthInside1LastX128;
-//     // how many uncollected tokens are owed to the position, as of the last computation
-//     uint128 tokensOwed0;
-//     uint128 tokensOwed1;
-// }
 contract Token is ERC20 ("Test Token", "TT"){
 
 }
@@ -4854,7 +4827,6 @@ contract YfSc{
             _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }  
 
-        // collect(_token0, _token1, _fee, 0, 0);
         _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1);
         updateStateVariables(_token0, _token1, _fee, _liquidityAdded);
     }
@@ -5118,6 +5090,34 @@ contract YfSc{
         int24 compressed = tick / tickSpacing;
         if (tick < 0 && tick % tickSpacing != 0) compressed--;
         return compressed * tickSpacing;
+    }
+
+    /// @notice Given a tick and a token amount, calculates the amount of token received in exchange
+    /// @param tick Tick value used to calculate the quote
+    /// @param baseAmount Amount of token to be converted
+    /// @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
+    /// @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
+    /// @return quoteAmount Amount of quoteToken received for baseAmount of baseToken
+    function getQuoteAtTick(
+        int24 tick,
+        uint128 baseAmount,
+        address baseToken,
+        address quoteToken
+    ) internal pure returns (uint256 quoteAmount) {
+        uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
+
+        // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
+        if (sqrtRatioX96 <= type(uint128).max) {
+            uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+            quoteAmount = baseToken < quoteToken
+                ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
+                : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+        } else {
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
+            quoteAmount = baseToken < quoteToken
+                ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
+                : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
+        }
     }
 
 }
