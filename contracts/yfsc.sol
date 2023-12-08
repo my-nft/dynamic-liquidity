@@ -753,6 +753,7 @@ contract YfSc{
 
         // Slot0 _slot0;
         // _slot0 = pool.slot0();
+        // return;
 
         setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
 
@@ -819,15 +820,16 @@ contract YfSc{
         //             params.liquidityDelta
         //         );
         ////////////////////////////////////////////////////////////
-
+        // return;
+        
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);
-        
+        // return;
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         
         ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
-   
+        // return;
         uint _amount0Min = 0;
         uint _amount1Min = 0;
 
@@ -840,7 +842,7 @@ contract YfSc{
             collect(_token0, _token1, _fee, 0, 0);
             _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }  
-        _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1, _amount0, _amount1);
+        // _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1, _amount0, _amount1);
         updateStateVariables(_token0, _token1, _fee, _liquidityAdded);
     }
 
