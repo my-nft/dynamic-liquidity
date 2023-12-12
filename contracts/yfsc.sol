@@ -20,14 +20,8 @@ import './FullMath.sol';
 import './FixedPoint96.sol';
 import './TickMath.sol';
 import './ISwapRouter.sol';
-// import './SqrtPriceMath.sol';
-// import './IQuoter.sol';
-// import {SqrtPriceMath} from './SqrtPriceMath.sol';
 import {SafeCast} from './SafeCast.sol';
-
-// import {FullMath} from './FullMath.sol';
 import {UnsafeMath} from './UnsafeMath.sol';
-// import {FixedPoint96} from './FixedPoint96.sol';
 
 struct IncreaseLiquidityParams {
     uint256 tokenId;
@@ -37,13 +31,6 @@ struct IncreaseLiquidityParams {
     uint256 amount1Min;
     uint256 deadline;
 }
-
-// Uniswap V3 mint params 
-// struct MintParams {
-//     uint24 uni3NftId;
-//     address user;
-//     uint totalLiquidity;
-// }
 
 struct MintParams {
     address token0;
@@ -373,8 +360,7 @@ contract YfSc{
         nonfungiblePositionManager = _nonfungiblePositionManager;
         iSwapRouter = _iSwapRouter;
         owner = msg.sender;
-        // quoter = _quoter;
-
+ 
         tickLower = -24000;
         tickUpper = -23040;
     }
@@ -400,7 +386,7 @@ contract YfSc{
     /// @dev external method to be called only by the owner 
     /// @param _tickLower lower price range tick
     /// @param _tickUpper upper roce range tick
-    function setTicks(int24 _tickLower, int24 _tickUpper) public onlyOwner{
+    function setTicks(int24 _tickLower, int24 _tickUpper) internal {
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower);
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper);
         tickLower = _tickLower;
@@ -413,7 +399,7 @@ contract YfSc{
         token.transfer(msg.sender, _balance);
     }
 
-    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) public onlyOwner {
+    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) internal  {
         address _factoryAddress = nonfungiblePositionManager.factory();
         Factory _factory = Factory(_factoryAddress);
         address _poolAddress = _factory.getPool(_token0, _token1, _fee);
@@ -428,13 +414,13 @@ contract YfSc{
         setTicks(tickFloor - _ticksDown * tickSpacing, tickCeil + _ticksUp * tickSpacing);
     }
 
-    function currentTicksForPosition(address _token0, address _token1, uint _fee) view public returns (int24 _tickLower, int24 _tickUpper){
-        (,,,,, _tickLower,_tickUpper,,,,,) = nonfungiblePositionManager.positions(poolNftIds[_token1][_token0][_fee] );
-    }
+    // function currentTicksForPosition(address _token0, address _token1, uint _fee) view public returns (int24 _tickLower, int24 _tickUpper){
+    //     (,,,,, _tickLower,_tickUpper,,,,,) = nonfungiblePositionManager.positions(poolNftIds[_token1][_token0][_fee] );
+    // }
 
-    function getTotalLiquidityAtStateForPosition(uint _position, uint _state) public view returns(uint){
-        return totalLiquidityAtStateForNft[_position][_state];
-    }
+    // function getTotalLiquidityAtStateForPosition(uint _position, uint _state) public view returns(uint){
+    //     return totalLiquidityAtStateForNft[_position][_state];
+    // }
 
     /// @notice external method 
     /// Allow to fixe the slippage for token0 and token1 in all the liquidity related operations
@@ -442,19 +428,19 @@ contract YfSc{
     /// @dev external method to be called only by the owner 
     /// @param _slippageToken0 slippage for token 0
     /// @param _slippageToken1 slippage for token 1
-    function setSilppageToken0(uint _slippageToken0, uint _slippageToken1) external onlyOwner{
-        slippageToken0 = _slippageToken0;
-        slippageToken1 = _slippageToken1;
-    }
+    // function setSilppageToken0(uint _slippageToken0, uint _slippageToken1) external onlyOwner{
+    //     slippageToken0 = _slippageToken0;
+    //     slippageToken1 = _slippageToken1;
+    // }
 
     /// @notice external method 
     /// Allow o update the lock time for liquidity. 
     /// The counter is initialised for a given user in each deposit
     /// @dev external method to be called only by the owner 
     /// @param _liquidityLockTime new lock time in seconds
-    function setLockTime(uint _liquidityLockTime) external onlyOwner{
-        liquidityLockTime = _liquidityLockTime;
-    }
+    // function setLockTime(uint _liquidityLockTime) external onlyOwner{
+    //     liquidityLockTime = _liquidityLockTime;
+    // }
 
     /// @notice external function 
     /// Allow o update the ticks of a given position,
@@ -463,7 +449,7 @@ contract YfSc{
     /// @param _token0 The first token of the liquidity pool pair
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool 
-    function updatePosition(address _token0, address _token1, uint24 _fee) external onlyOwner {
+    function updatePosition(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) external onlyOwner {
 
         // initialise the pool tokens contracts
         ERC20 token0 = ERC20(_token0);
@@ -473,14 +459,19 @@ contract YfSc{
         uint oldStateCounter = statesCounter;
 
         // before updating the position, we first claim all the pending rewards for both tokens
-        collect(_token0, _token1, _fee, 0, 0);
+        collect(_token0, _token1, _fee, 0, 0, true);
+        
 
         // We store the contract balance of bothe tokens to knwo the precise amount of liquidity tokens removed
-        uint oldBalanceToken0 = token0.balanceOf(address(this));
-        uint oldBalanceToken1 = token1.balanceOf(address(this));
+        // uint oldBalanceToken0 = token0.balanceOf(address(this));
+        // uint oldBalanceToken1 = token1.balanceOf(address(this));
+
+        uint _amount0;
+        uint _amount1;
 
         // decrease 100% of the liquidity. 'false' to indicate that liquidity sates have not been updated yet 
-        decreaseLiquidity(_token0, _token1, _fee, 100, false);
+        (_amount0, _amount1) = decreaseLiquidity(_token0, _token1, _fee, 100, false, true);
+        // return;
 
         // pull the new tokens balances to calculate the total received tokens after liquidty being removed, 
         // to add them back using the new ticks
@@ -494,75 +485,84 @@ contract YfSc{
         poolNftIds[_token0][_token1][_fee] = 0;
 
         // prepare the values to be added as liquidity in the new price range
-        uint _amount0 = newBalanceToken0;
+        // uint _amount0 = newBalanceToken0;// - oldBalanceToken0;
 
-        // calculate the amount of the token1 using this formula to minimize internal swaps 
-        uint _amount1 = newBalanceToken1; //getAmount1ForAmount0(tickLower, tickUpper, _amount0);
+        // // calculate the amount of the token1 using this formula to minimize internal swaps 
+        // uint _amount1 = newBalanceToken1;// - oldBalanceToken1;
 
         // apply the slippage params 
         uint _amount0Min = 0 ; //newBalanceToken0 - newBalanceToken0 * slippageToken0 / quotient;
         uint _amount1Min = 0 ; //newBalanceToken1- newBalanceToken1 * slippageToken1 / quotient;
 
-        // Since decrease liquidity sends the tokens back to the owner wallet, we have to transfer them back
-        // token0.transferFrom(msg.sender, address(this), _amount0);
-        // token1.transferFrom(msg.sender, address(this), _amount1);
-
         // approve the uniswap v3 position manager to spend the tokens to mint the position 
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         
-        // we can apply the slippage formula, but this is better for transactions fees
-        _amount0Min = 0 ;
-        _amount1Min = 0 ; 
+        // mintNFT(
+        //     _token0, 
+        //     _token1, 
+        //     _fee, 
+        //     _amount0/2,
+        //     _amount1/2,
+        //     _ticksUp,
+        //     _ticksDown
+        // );
 
-        MintParams memory mintParams;
 
-        // prepare mint params 
-        mintParams = MintParams(
-                    _token0, 
-                    _token1, 
-                    _fee, 
-                    tickLower, 
-                    tickUpper, 
-                    _amount0/2, 
-                    _amount1/2, 
-                    0, 
-                    0, 
-                    address(this), 
-                    block.timestamp + deadline 
+        //////////////// MINTING PROCESS //////////////////////
+
+        address _factoryAddress = nonfungiblePositionManager.factory();
+        Factory _factory = Factory(_factoryAddress);
+
+        address _poolAddress = _factory.getPool(_token0, _token1, _fee);
+        Pool pool = Pool(_poolAddress);
+        (uint160 sqrtPriceX96 , int24 tick, , , , , ) = pool.slot0();
+
+        setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
+
+        uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
+
+        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(tickLower);
+
+        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(tickUpper);
+
+        uint128 _liquidityForAmounts = getLiquidityForAmounts(sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, _amount0, _amount1);
+
+        _amount0 = getAmount0Delta(
+                    sqrtPriceX96,
+                    sqrtRatioBX96,
+                    _liquidityForAmounts,
+                    true
+                );
+        _amount1 = getAmount1Delta(
+                    sqrtRatioAX96,
+                    sqrtPriceX96,
+                    _liquidityForAmounts,
+                    true
                 );
 
-        //Mint the new position
-        (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        ) = nonfungiblePositionManager.mint(mintParams);
-
-        emit NftMinted(tokenId, liquidity, amount0, amount1);
-
-        // update the uniswap nft 
-        poolNftIds[_token0][_token1][_fee] = tokenId;
-
-        // update the uniswap nft 
-        poolNftIds[_token1][_token0][_fee] = tokenId;
+        token0.transferFrom(msg.sender, address(this), 2*_amount0);
+        token1.transferFrom(msg.sender, address(this), 2*_amount1);
+        
+        mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
 
         uint balanceToken0After = token0.balanceOf(address(this));
         uint balanceToken1After = token1.balanceOf(address(this));
 
         // in case some tokens wasn t added as liquidity, send back to caller 
-        if(balanceToken0After > oldBalanceToken0){
-            token0.transfer(msg.sender, balanceToken0After - oldBalanceToken0);
-        }
+        // if(balanceToken0After > oldBalanceToken0){
+        //     token0.transfer(msg.sender, balanceToken0After - oldBalanceToken0);
+        // }
 
         // in case some tokens wasn t added as liquidity, send back to caller 
-        if(balanceToken1After > oldBalanceToken1){
-            token1.transfer(msg.sender, balanceToken1After - oldBalanceToken1);
-        }
+        // if(balanceToken1After > oldBalanceToken1){
+        //     token1.transfer(msg.sender, balanceToken1After - oldBalanceToken1);
+        // }
 
         // get the fist uniswap nft minted for the tokens pair - fee
         uint _originalPositionNft = originalPoolNftIds[_token0][_token1][_fee];
+
+        _nftId = poolNftIds[_token0][_token1][_fee];
 
         (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_nftId);
 
@@ -586,6 +586,52 @@ contract YfSc{
     /// @param _amount0Min minimum accepted amount of token 0
     /// @param _amount1Min minimum accepted amount of token 1
     /// @return liquidity the total amount of liquidity added
+    // function mintUni3Nft(
+    //                         address _token0, 
+    //                         address _token1, 
+    //                         uint24 _fee, 
+    //                         int24 _tickLower, 
+    //                         int24 _tickUpper, 
+    //                         uint _amount0, 
+    //                         uint _amount1, 
+    //                         uint _amount0Min, 
+    //                         uint _amount1Min
+    //                     ) internal returns(uint128 liquidity){
+
+    //     MintParams memory mintParams;
+    //     mintParams = MintParams(
+    //                 _token0, 
+    //                 _token1, 
+    //                 _fee, 
+    //                 _tickLower, 
+    //                 _tickUpper, 
+    //                 _amount0, 
+    //                 _amount1, 
+    //                 _amount0Min, 
+    //                 _amount1Min, 
+    //                 address(this), 
+    //                 block.timestamp + deadline 
+    //                 );
+
+    //     (uint256 tokenId, uint128 _liquidity , uint __amount0, uint __amount1) = nonfungiblePositionManager.mint(mintParams);
+
+    //     emit NftMinted(tokenId, liquidity, __amount0, __amount1);
+
+    //     if (originalPoolNftIds[_token0][_token1][_fee] == 0 && originalPoolNftIds[_token1][_token0][_fee] == 0){
+    //         originalPoolNftIds[_token1][_token0][_fee] = tokenId;
+    //         originalPoolNftIds[_token0][_token1][_fee] = tokenId;
+    //     }
+
+    //     poolNftIds[_token0][_token1][_fee] = tokenId;
+
+    //     poolNftIds[_token1][_token0][_fee] = tokenId;
+
+    //     positionsNFT.safeMint(tokenId, msg.sender, _liquidity, statesCounter);
+
+    //     liquidity = _liquidity;
+    //     return liquidity;
+    // }
+
     function mintUni3Nft(
                             address _token0, 
                             address _token1, 
@@ -612,8 +658,13 @@ contract YfSc{
                     address(this), 
                     block.timestamp + deadline 
                     );
+        
+        (uint256 tokenId, 
+        uint128 _liquidity , 
+        uint __amount0, 
+        uint __amount1) = nonfungiblePositionManager.mint(mintParams);
 
-        (uint256 tokenId, uint128 _liquidity , uint __amount0, uint __amount1) = nonfungiblePositionManager.mint(mintParams);
+        // return 1;
 
         emit NftMinted(tokenId, liquidity, __amount0, __amount1);
 
@@ -735,12 +786,12 @@ contract YfSc{
 
         _amount0 = getAmount0Delta(
                     sqrtPriceX96,
-                    TickMath.getSqrtRatioAtTick(tickUpper),
+                    sqrtRatioBX96,
                     _liquidityForAmounts,
                     true
                 );
         _amount1 = getAmount1Delta(
-                    TickMath.getSqrtRatioAtTick(tickLower),
+                    sqrtRatioAX96,
                     sqrtPriceX96,
                     _liquidityForAmounts,
                     true
@@ -748,12 +799,10 @@ contract YfSc{
 
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);
-        // return;
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
         
         ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
-        // return;
         uint _amount0Min = 0;
         uint _amount1Min = 0;
 
@@ -763,53 +812,53 @@ contract YfSc{
         {
             _liquidityAdded = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
         }else{
-            collect(_token0, _token1, _fee, 0, 0);
+            collect(_token0, _token1, _fee, 0, 0, false);
             _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }  
-        _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1, _amount0, _amount1);
+        // _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1, _amount0, _amount1);
         updateStateVariables(_token0, _token1, _fee, _liquidityAdded);
     }
 
-    function swapAndLiquify(address _token0, address _token1, uint24 _fee, uint half) internal returns (uint128){
-        ERC20 token0 = ERC20(_token0);
-        ERC20 token1 = ERC20(_token1); 
-        ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
-        _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
-            _token0, 
-            _token1, 
-            _fee, 
-            address(this), 
-            block.timestamp + deadline,
-            half,
-            0,
-            0
-        );
+    // function swapAndLiquify(address _token0, address _token1, uint24 _fee, uint half) internal returns (uint128){
+    //     ERC20 token0 = ERC20(_token0);
+    //     ERC20 token1 = ERC20(_token1); 
+    //     ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
+    //     _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
+    //         _token0, 
+    //         _token1, 
+    //         _fee, 
+    //         address(this), 
+    //         block.timestamp + deadline,
+    //         half,
+    //         0,
+    //         0
+    //     );
 
-        token0.approve(address(iSwapRouter), half);
-        uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
-        uint _amountMin = 0; 
+    //     token0.approve(address(iSwapRouter), half);
+    //     uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
+    //     uint _amountMin = 0; 
 
-        token0.approve(address(nonfungiblePositionManager), half);
-        token1.approve(address(nonfungiblePositionManager), amountOut);
-        return increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
-    }
+    //     token0.approve(address(nonfungiblePositionManager), half);
+    //     token1.approve(address(nonfungiblePositionManager), amountOut);
+    //     return increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
+    // }
 
-    function handleExess(address _token0, address _token1, 
-                        uint24 _fee, uint128 _liquidityAdded, 
-                        uint _oldBalanceToken0, uint _oldBalanceToken1,
-                        uint _amount0, uint _amount1
-                        ) internal returns (uint128){
-        ERC20 token0 = ERC20(_token0);
-        ERC20 token1 = ERC20(_token1); 
-        uint newBalanceToken0 = token0.balanceOf(address(this));
-        uint newBalanceToken1 = token1.balanceOf(address(this));
-        if(newBalanceToken0 - _oldBalanceToken0 > _amount0*5/100){ // only swap if more than 5 %
-            _liquidityAdded += swapAndLiquify(_token0, _token1, _fee, (newBalanceToken0 - _oldBalanceToken0)/2);
-        }else if(newBalanceToken1 - _oldBalanceToken1 > _amount1*5/100){
-            _liquidityAdded += swapAndLiquify(_token1, _token0, _fee, (newBalanceToken1 - _oldBalanceToken1)/2);  
-        }
-        return _liquidityAdded;
-    }
+    // function handleExess(address _token0, address _token1, 
+    //                     uint24 _fee, uint128 _liquidityAdded, 
+    //                     uint _oldBalanceToken0, uint _oldBalanceToken1,
+    //                     uint _amount0, uint _amount1
+    //                     ) internal returns (uint128){
+    //     ERC20 token0 = ERC20(_token0);
+    //     ERC20 token1 = ERC20(_token1); 
+    //     uint newBalanceToken0 = token0.balanceOf(address(this));
+    //     uint newBalanceToken1 = token1.balanceOf(address(this));
+    //     if(newBalanceToken0 - _oldBalanceToken0 > _amount0*5/100){ // only swap if more than 5 %
+    //         _liquidityAdded += swapAndLiquify(_token0, _token1, _fee, (newBalanceToken0 - _oldBalanceToken0)/2);
+    //     }else if(newBalanceToken1 - _oldBalanceToken1 > _amount1*5/100){
+    //         _liquidityAdded += swapAndLiquify(_token1, _token0, _fee, (newBalanceToken1 - _oldBalanceToken1)/2);  
+    //     }
+    //     return _liquidityAdded;
+    // }
 
     function updateStateVariables(address _token0, address _token1, uint24 _fee, uint128 _liquidityAdded) internal {
 
@@ -833,7 +882,6 @@ contract YfSc{
         liquidityLastDepositTime[userNft] = block.timestamp;
     }
 
-
     /// @notice Allow user to withdraw liquidity from a given position, 
     /// It will burn the liquidity and send the tokens to the depositer
     /// @dev Public function
@@ -842,12 +890,14 @@ contract YfSc{
     /// @param _fee The desired fee for the pool  
     /// @param _purcentage desired % of the users liquidity to be removed
     /// @param _notYetpdated always set to true, it is set to false only internally
-    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _notYetpdated) public {
+    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _notYetpdated, bool _collect) public returns (uint, uint) {
+        
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
         uint _poolOriginalNftId = originalPoolNftIds[_token0][_token1][_fee];
+        
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _poolOriginalNftId);
         require(liquidityLastDepositTime[_userNftId] < block.timestamp + liquidityLockTime, "liquidity locked !");
-
+        
         uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
         uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition);
         uint128 _userLiquidity = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
@@ -861,7 +911,6 @@ contract YfSc{
         decreaseLiquidityParams = DecreaseLiquidityParams(
                     _poolNftId, 
                     _liquidityToRemove, 
-                    // 10000000000, 
                     _amount0Min, 
                     _amount1Min, 
                     block.timestamp + deadline); 
@@ -869,12 +918,15 @@ contract YfSc{
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
         (,,,,,,,,,,uint128 tokensOwed0_before,uint128 tokensOwed1_before) = nonfungiblePositionManager.positions(_poolNftId);
-
+        
         nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
 
         (,,,,,,,,,,uint128 tokensOwed0_after,uint128 tokensOwed1_after) = nonfungiblePositionManager.positions(_poolNftId);
-
-        collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before);
+        if(_collect){
+            collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before, false);
+        }else{
+            collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before, true);
+        }
 
         (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
         
@@ -892,7 +944,8 @@ contract YfSc{
 
             statesCounter++;
         }
-   
+
+        return (tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before);
     }
     
     /// @notice returns the pending rewards for a user in a given pool
@@ -946,7 +999,13 @@ contract YfSc{
     /// @param _fee The desired fee for the pool  
     /// @param _tokensOwed0 external caller should enter 0, a positive value is used in case of decreaseliquidity internal call
     /// @param _tokensOwed1 external caller should enter 0, a positive value is used in case of decreaseliquidity internal call
-    function collect(address _token0, address _token1, uint _fee, uint128 _tokensOwed0, uint128 _tokensOwed1) public {
+    /// @param _rebalance if rebalance is to true, means keep rewards and tokens in the smart contract, if false send to the caller
+    function collect(address _token0, 
+    address _token1, 
+    uint _fee, 
+    uint128 _tokensOwed0, 
+    uint128 _tokensOwed1, 
+    bool _rebalance) public {
         uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee]; // get first pool nft id 
         uint _poolNftId = poolNftIds [_token0][_token1][_fee]; // get first pool nft id 
         uint _userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
@@ -959,7 +1018,7 @@ contract YfSc{
 
         uint oldBalanceToken0 = token0.balanceOf(address(this));
         uint oldBalanceToken1 = token1.balanceOf(address(this));
-        (,,,,,,,uint128 poolLiquidity,,,uint128 tokensOwed0,uint128 tokensOwed1) = nonfungiblePositionManager.positions(_poolNftId);
+        // (,,,,,,,uint128 poolLiquidity,,,uint128 tokensOwed0,uint128 tokensOwed1) = nonfungiblePositionManager.positions(_poolNftId);
         collectParams = CollectParams(
                     _poolNftId, 
                     address(this), 
@@ -996,6 +1055,10 @@ contract YfSc{
         totalRewardPaidForNftToken0[_originalNftId] += _rewardToken0;
         totalRewardPaidForNftToken1[_originalNftId] += _rewardToken1;
         bool claimed = false;
+
+        if (_rebalance){
+            return ;
+        }
         if (_rewardToken0 + _tokensOwed0 > 0){
             // send maximum the smart contract balance
             token0.transfer(msg.sender, _rewardToken0 + _tokensOwed0);
@@ -1010,34 +1073,6 @@ contract YfSc{
         }
     }
 
-    /// @notice Computes the required amount of token1 for a given amount of token0 and price range
-    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower))
-    /// @param _tickLower tick lower
-    /// @param _tickUpper tick upper
-    /// @param amount0 The amount0 being sent in
-    /// @return amount1 The amount of returned liquidity
-    function getAmount1ForAmount0(
-        int24 _tickLower,
-        int24 _tickUpper,
-        uint256 amount0
-    ) public pure returns (uint256 amount1) {
-        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower); //A sqrt price representing the first tick boundary
-        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper); //A sqrt price representing the second tick boundary
-        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-        uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
-        uint128 liquidity = toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
-        amount1 = FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
-        return amount1;
-    }
-
-    // function checkTick(uint256 _tick) public view returns (uint160){
-    //     return TickMath.getSqrtRatioAtTick(int24(int256(_tick)));
-    // }
-
-    function checkTick(int24 _tick)public view returns (uint160){
-        return TickMath.getSqrtRatioAtTick(_tick);
-    }
-
     /// @dev Rounds tick down towards negative infinity so that it's a multiple
     /// of `tickSpacing`.
     function _floor(int24 tick, int24 tickSpacing) internal view returns (int24) {
@@ -1045,35 +1080,6 @@ contract YfSc{
         if (tick < 0 && tick % tickSpacing != 0) compressed--;
         return compressed * tickSpacing;
     }
-
-    /// @notice Given a tick and a token amount, calculates the amount of token received in exchange
-    /// @param tick Tick value used to calculate the quote
-    /// @param baseAmount Amount of token to be converted
-    /// @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
-    /// @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
-    // /// @return quoteAmount Amount of quoteToken received for baseAmount of baseToken
-    // function getQuoteAtTick(
-    //     int24 tick,
-    //     uint128 baseAmount,
-    //     address baseToken,
-    //     address quoteToken
-    // ) internal pure returns (uint256 quoteAmount) {
-    //     uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
-
-    //     // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
-    //     if (sqrtRatioX96 <= type(uint128).max) {
-    //         uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-    //         quoteAmount = baseToken < quoteToken
-    //             ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
-    //             : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
-    //     } else {
-    //         uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
-    //         quoteAmount = baseToken < quoteToken
-    //             ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
-    //             : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
-    //     }
-    // }
-
 
     /// @notice Computes the amount of liquidity received for a given amount of token0 and price range
     /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower))
@@ -1089,21 +1095,6 @@ contract YfSc{
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
         uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
         return toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
-    }
-
-    /// @notice Computes the amount of token1 for a given amount of liquidity and a price range
-    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
-    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
-    /// @param liquidity The liquidity being valued
-    /// @return amount1 The amount of token1
-    function getAmount1ForLiquidity(
-        uint160 sqrtRatioAX96,
-        uint160 sqrtRatioBX96,
-        uint128 liquidity
-    ) internal pure returns (uint256 amount1) {
-        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-
-        return FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
     }
 
     /// @notice Computes the maximum amount of liquidity received for a given amount of token0, token1, the current
@@ -1134,26 +1125,6 @@ contract YfSc{
             liquidity = getLiquidityForAmount1(sqrtRatioAX96, sqrtRatioBX96, amount1);
         }
     }
-
-    /// @notice Computes the amount of token0 for a given amount of liquidity and a price range
-    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
-    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
-    /// @param liquidity The liquidity being valued
-    /// @return amount0 The amount of token0
-    // function getAmount0ForLiquidity(
-    //     uint160 sqrtRatioAX96,
-    //     uint160 sqrtRatioBX96,
-    //     uint128 liquidity
-    // ) internal pure returns (uint256 amount0) {
-    //     if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-
-    //     return
-    //         FullMath.mulDiv(
-    //             uint256(liquidity) << FixedPoint96.RESOLUTION,
-    //             sqrtRatioBX96 - sqrtRatioAX96,
-    //             sqrtRatioBX96
-    //         ) / sqrtRatioAX96;
-    // }
 
     /// @notice Computes the amount of liquidity received for a given amount of token1 and price range
     /// @dev Calculates amount1 / (sqrt(upper) - sqrt(lower)).
@@ -1216,7 +1187,7 @@ contract YfSc{
         bool roundUp
     ) public pure returns (uint256 amount1) {
         unchecked {
-            if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+            if (    sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
             return
                 roundUp

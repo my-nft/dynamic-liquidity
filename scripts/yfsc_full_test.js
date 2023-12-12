@@ -2,6 +2,7 @@ UNI_ADDRESS = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
 WETH_ADDRESS = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"
 POSITION_MANAGER_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88"
 ISWAP_ROUTER = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+QUOTER = "0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6"
 
 MINTER_ROLE = "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
 
@@ -36,45 +37,7 @@ async function main() {
 
   YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2[0]);
   YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, ISWAP_ROUTER);
-  
-  // const tx01 = await YfScContract.connect(signer2[0]).setRates(
-  //   UNI_ADDRESS,
-  //   WETH_ADDRESS,
-  //   "3000",
-  //   "1",
-  //   "2",
-  //   { gasLimit: '2000000' }
-  // )
-  // await tx01.wait()
 
-  // const tx001 = await YfScContract.connect(signer2[0]).setTicks(
-  //   // "-21960",
-  //   "-55512500",
-  //   "-55009900",
-  //   // "-27060",
-  //   // "-20820",
-  //   { gasLimit: '1000000' }
-  // )
-  // await tx001.wait()
-
-  // var tickUpper = await YfScContract.connect(signer2[0]).tickUpper();
-  // console.log("tickUpper: ", tickUpper);
-
-  // var tickLower = await YfScContract.connect(signer2[0]).tickLower();
-  // console.log("tickLower: ", tickLower);
-
-  // const sqrtPriceToPrice = (sqrtPriceX96, token0Decimals, token1Decimals) => {
-  //   let mathPrice = Number(sqrtPriceX96) ** 2 / 2 ** 192;
-  //   const decimalAdjustment = 10 ** (token0Decimals - token1Decimals);
-  //   const price = mathPrice * decimalAdjustment;
-  //   return price;
-  // };
-  
-  // const tick1 = await YfScContract.connect(signer2[1]).tickLower()
-  // console.log("tickLower: ", tick1);
-  // const tick2 = await YfScContract.connect(signer2[1]).tickUpper()
-  // console.log("tickUpper: ", tick2);
-  // // return;
   const tx = await PositionsNFTContract.connect(signer2[0]).grantRole(
     MINTER_ROLE, YfScContract.target,
     { gasLimit: '1000000' }
@@ -99,12 +62,10 @@ async function main() {
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
-    "5351019098278467600",
-    "1000000000000000000", 
-    // "9226598377856050",
-    // "1000000000000000", 
-    "5",
-    "5",
+    "535101909827846",
+    "100000000000000", 
+    "1",
+    "2",
     { gasLimit: '2000000' }
   )
   await tx0.wait()
@@ -115,8 +76,8 @@ async function main() {
   //   "3000", 
   //   "92265983778560538",
   //   "1000000000000000", 
-  //   // "9226598377856050",
-  //   // "1000000000000000", 
+  //   "1",
+  //   "2",
   //   { gasLimit: '2000000' }
   // )
   // await tx110.wait()
@@ -127,8 +88,8 @@ async function main() {
   //   "3000", 
   //   "92265983778560538",
   //   "1000000000000000", 
-  //   // "9226598377856050",
-  //   // "1000000000000000", 
+  //   "1",
+  //   "2",
   //   { gasLimit: '2000000' }
   // )
   // await tx10.wait()
@@ -139,6 +100,8 @@ async function main() {
   //   "3000", 
   //   "9226598377856053",
   //   "100000000000000", 
+  //   "1",
+  //   "2",
   //   { gasLimit: '2000000' }
   // )
   // await tx1.wait()
@@ -149,6 +112,8 @@ async function main() {
   //   "3000", 
   //   "9226598377856053",
   //   "100000000000000", 
+  //   "1",
+  //   "2",
   //   { gasLimit: '2000000' }
   // )
   // await tx11.wait()
@@ -164,16 +129,16 @@ async function main() {
     sqrtPriceLimitX96: "0"
   }
 
-  // await uniContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
+  await uniContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
 
-  // const tx2 = await SwapContract.connect(signer2[0]).exactInputSingle(
-  //       swapParams,
-  //       { 
-  //           gasLimit: '2000000', 
-  //           value: '0'
-  //       }
-  //   );
-  //   await tx2.wait()
+  const tx2 = await SwapContract.connect(signer2[0]).exactInputSingle(
+        swapParams,
+        { 
+            gasLimit: '2000000', 
+            value: '0'
+        }
+    );
+    await tx2.wait()
 
   // const tx3 = await YfScContract.connect(signer2[1]).collect(
   //   UNI_ADDRESS, 
@@ -185,88 +150,55 @@ async function main() {
   // )
   // await tx3.wait()
 
-  const tx4 = await YfScContract.connect(signer2[0]).collect(
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000",
-    0,
-    0,
-    { gasLimit: '2000000' }
-  )
-  await tx4.wait()
-
-  // const tx001 = await YfScContract.connect(signer2[0]).setRates(
-  //   "40000000000000000", 
-  //   "120000000000000000", 
-  //   { gasLimit: '2000000' }
-  // )
-  // await tx001.wait()
-
-  // const tx100 = await YfScContract.connect(signer2[0]).setTicks(
-  //   // "-21960",
-  //   "-27060",
-  //   "-20820",
-  //   { gasLimit: '1000000' }
-  // )
-  // await tx100.wait()
-
-  const tx00 = await YfScContract.connect(signer2[0]).setRates(
-    UNI_ADDRESS,
-    WETH_ADDRESS,
-    "3000",
-    "4",
-    "5",
-    { gasLimit: '2000000' }
-  )
-  await tx00.wait()
-
-  // const tx01 = await YfScContract.connect(signer2[0]).setRates(
-  //   UNI_ADDRESS,
-  //   WETH_ADDRESS,
+  // const tx4 = await YfScContract.connect(signer2[0]).collect(
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
   //   "3000",
-  //   "1",
+  //   0,
+  //   0,
   //   { gasLimit: '2000000' }
   // )
-  // await tx01.wait()
+  // await tx4.wait()
 
+  // var tickUpper = await YfScContract.connect(signer2[0]).tickUpper();
+  // console.log("tickUpper: ", tickUpper);
 
-  var tickUpper = await YfScContract.connect(signer2[0]).tickUpper();
-  console.log("tickUpper: ", tickUpper);
+  // var tickLower = await YfScContract.connect(signer2[0]).tickLower();
+  // console.log("tickLower: ", tickLower);
 
-  var tickLower = await YfScContract.connect(signer2[0]).tickLower();
-  console.log("tickLower: ", tickLower);
-
-    // const tx02 = await YfScContract.connect(signer2[0]).updatePosition( 
-    //   UNI_ADDRESS, 
-    //   WETH_ADDRESS, 
-    //   "3000",  
-    //   { gasLimit: '2000000' } 
-    // ) 
-    // await tx02.wait() 
-    // console.log("update position: ", tx02); 
-
-  const tx40 = await YfScContract.connect(signer2[0]).decreaseLiquidity( 
+  const tx02 = await YfScContract.connect(signer2[0]).updatePosition( 
     UNI_ADDRESS, 
     WETH_ADDRESS, 
-    "3000", 
-    "100", 
-    "false",
-    { gasLimit: '1000000' } 
+    "3000",  
+    "3",
+    "3",
+    { gasLimit: '2000000' } 
   ) 
-  await tx40.wait() 
+  await tx02.wait() 
+  console.log("update position: ", tx02); 
 
-  const tx020 = await YfScContract.connect(signer2[0]).withdraw( 
-    UNI_ADDRESS, 
-    { gasLimit: '200000' } 
-  ) 
-  await tx020.wait() 
+  // const tx40 = await YfScContract.connect(signer2[0]).decreaseLiquidity( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "100", 
+  //   "true",
+  //   "true",
+  //   { gasLimit: '1000000' } 
+  // ) 
+  // await tx40.wait() 
 
-  const tx0200 = await YfScContract.connect(signer2[0]).withdraw( 
-    WETH_ADDRESS, 
-    { gasLimit: '200000' } 
-  ) 
-  await tx0200.wait() 
+  // const tx020 = await YfScContract.connect(signer2[0]).withdraw( 
+  //   UNI_ADDRESS, 
+  //   { gasLimit: '200000' } 
+  // ) 
+  // await tx020.wait() 
 
+  // const tx0200 = await YfScContract.connect(signer2[0]).withdraw( 
+  //   WETH_ADDRESS, 
+  //   { gasLimit: '200000' } 
+  // ) 
+  // await tx0200.wait() 
 
   const uniNftId = await YfScContract.connect(signer2[0]).poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
   console.log("uniNftId: ", uniNftId);
@@ -280,32 +212,34 @@ async function main() {
   console.log("totalStatesForPosition2: ", totalStatesForPosition2);
   console.log("");
   console.log("liquidity for position ------> ", positionNftId1)
-  for(var  ind = 0; ind <= parseInt(totalStatesForPosition1); ind++){
-    console.log("position state id   : ", ind);
-    var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId1, ind);
-    console.log("global state id     : ", stateIdForPosition);
-    var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId1, stateIdForPosition);
-    console.log("liquidityAtState    : ", liquidityAtState);
-    var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
-    console.log("poolLiquidityAtState: ", poolLiquidityAtState);
-  }
-  console.log("");
-  console.log("liquidity for position ------> ", positionNftId2)
-  for(var  ind = 0; ind <= parseInt(totalStatesForPosition2); ind++){
-    console.log("position state id   : ", ind);
-    var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId2, ind);
-    console.log("global state id     : ", stateIdForPosition);
-    var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId2, stateIdForPosition);
-    console.log("liquidityAtState    : ", liquidityAtState);
-    var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
-    console.log("poolLiquidityAtState: ", poolLiquidityAtState);
-  }
+  // for(var  ind = 0; ind <= parseInt(totalStatesForPosition1); ind++){
+  //   console.log("position state id   : ", ind);
+  //   var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId1, ind);
+  //   console.log("global state id     : ", stateIdForPosition);
+  //   var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId1, stateIdForPosition);
+  //   console.log("liquidityAtState    : ", liquidityAtState);
+  //   var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
+  //   console.log("poolLiquidityAtState: ", poolLiquidityAtState);
+  // }
+  // console.log("");
+  // console.log("liquidity for position ------> ", positionNftId2)
+  // for(var  ind = 0; ind <= parseInt(totalStatesForPosition2); ind++){
+  //   console.log("position state id   : ", ind);
+  //   var stateIdForPosition = await PositionsNFTContract.connect(signer2[0]).statesIdsForPosition(positionNftId2, ind);
+  //   console.log("global state id     : ", stateIdForPosition);
+  //   var liquidityAtState = await PositionsNFTContract.connect(signer2[0]).liquidityForUserInPoolAtState(positionNftId2, stateIdForPosition);
+  //   console.log("liquidityAtState    : ", liquidityAtState);
+  //   var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
+  //   console.log("poolLiquidityAtState: ", poolLiquidityAtState);
+  // }
 
-  const pendingrewardForPosition1 = await YfScContract.connect(signer2[0]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
-  console.log("pendingrewardForPosition1: ", pendingrewardForPosition1);
 
-  const pendingrewardForPosition2 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
-  console.log("pendingrewardForPosition2: ", pendingrewardForPosition2);
+
+  // const pendingrewardForPosition1 = await YfScContract.connect(signer2[0]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
+  // console.log("pendingrewardForPosition1: ", pendingrewardForPosition1);
+
+  // const pendingrewardForPosition2 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(UNI_ADDRESS, WETH_ADDRESS, "3000");
+  // console.log("pendingrewardForPosition2: ", pendingrewardForPosition2);
 
 }
 
