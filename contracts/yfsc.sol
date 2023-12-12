@@ -461,7 +461,6 @@ contract YfSc{
         // before updating the position, we first claim all the pending rewards for both tokens
         collect(_token0, _token1, _fee, 0, 0, true);
         
-
         // We store the contract balance of bothe tokens to knwo the precise amount of liquidity tokens removed
         // uint oldBalanceToken0 = token0.balanceOf(address(this));
         // uint oldBalanceToken1 = token1.balanceOf(address(this));
@@ -470,7 +469,7 @@ contract YfSc{
         uint _amount1;
 
         // decrease 100% of the liquidity. 'false' to indicate that liquidity sates have not been updated yet 
-        (_amount0, _amount1) = decreaseLiquidity(_token0, _token1, _fee, 100, false, true);
+        (_amount0, _amount1) = decreaseLiquidity(_token0, _token1, _fee, 100, true);
         // return;
 
         // pull the new tokens balances to calculate the total received tokens after liquidty being removed, 
@@ -541,13 +540,15 @@ contract YfSc{
                     true
                 );
 
-        token0.transferFrom(msg.sender, address(this), 2*_amount0);
-        token1.transferFrom(msg.sender, address(this), 2*_amount1);
+        // token0.transferFrom(msg.sender, address(this), 2*_amount0);
+        // token1.transferFrom(msg.sender, address(this), 2*_amount1);
+
+        // return;
         
         mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
 
-        uint balanceToken0After = token0.balanceOf(address(this));
-        uint balanceToken1After = token1.balanceOf(address(this));
+        // uint balanceToken0After = token0.balanceOf(address(this));
+        // uint balanceToken1After = token1.balanceOf(address(this));
 
         // in case some tokens wasn t added as liquidity, send back to caller 
         // if(balanceToken0After > oldBalanceToken0){
@@ -889,8 +890,8 @@ contract YfSc{
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
     /// @param _purcentage desired % of the users liquidity to be removed
-    /// @param _notYetpdated always set to true, it is set to false only internally
-    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _notYetpdated, bool _collect) public returns (uint, uint) {
+    /// @param _rebalance always set to true for external calls, it is set to false only internally
+    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _rebalance) public returns (uint, uint) {
         
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
         uint _poolOriginalNftId = originalPoolNftIds[_token0][_token1][_fee];
@@ -922,18 +923,18 @@ contract YfSc{
         nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
 
         (,,,,,,,,,,uint128 tokensOwed0_after,uint128 tokensOwed1_after) = nonfungiblePositionManager.positions(_poolNftId);
-        if(_collect){
-            collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before, false);
-        }else{
-            collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before, true);
-        }
+        // if(_collect){
+            collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before, _rebalance);
+        // }else{
+        //     collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before, false);
+        // }
 
         (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
         
         uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
         totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
 
-        if(_notYetpdated){
+        if(! _rebalance){
             
             liquidityLastStateUpdate[_nftId] = statesCounter;
 
