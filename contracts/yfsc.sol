@@ -499,26 +499,17 @@ contract YfSc{
         (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
 
         (uint _adjustedAmount0, uint _adjustedAmount1) = liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
-        // token0.approve(address(nonfungiblePositionManager), _adjustedAmount0);
-        // token1.approve(address(nonfungiblePositionManager), _adjustedAmount1);
-        // uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, _amount0Min, _amount1Min);
-        // uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, min(_adjustedAmount0, _balance0), min(_adjustedAmount1, _balance1), _amount0Min, _amount1Min);
-        
-        // return;
+
         public_amount0 = _adjustedAmount0;
         public_amount1 = _adjustedAmount1;
 
         if (_adjustedAmount0 < 98*_amount0/100){
             _adjustedAmount1 += swapExess(_token1, _token0, _fee, (_amount0 - _adjustedAmount0)/2);
             _adjustedAmount0 = _adjustedAmount0 + (_amount0 - _adjustedAmount0)/2;
-            
-            // _adjustedAmount1 += swapExess(_token0, _token1, _fee, (_amount0 - _adjustedAmount0)/2);
-            // _adjustedAmount0 = _adjustedAmount0 - (_amount0 - _adjustedAmount0)/2;
-            // (_adjustedAmount0, _adjustedAmount1) = liquidityAmounts(_adjustedAmount0, _adjustedAmount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+
         }else if (_adjustedAmount1 < 98*_amount1/100){
             _adjustedAmount0 += swapExess(_token1, _token0, _fee,(_amount1 - _adjustedAmount1)/2) ;
             _adjustedAmount1 = _adjustedAmount1 + (_amount1 - _adjustedAmount1)/2;
-            // (_adjustedAmount0, _adjustedAmount1) = liquidityAmounts(_adjustedAmount0, _adjustedAmount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
         }
 
         // approve the uniswap v3 position manager to spend the tokens to mint the position 
@@ -530,12 +521,7 @@ contract YfSc{
         public_balance1 = _balance1;
         public_adjustedAmount0 = _adjustedAmount0;
         public_adjustedAmount1 = _adjustedAmount1;
-        // public_adjustedAmount0 = min(_adjustedAmount0, _balance0);
-        // public_adjustedAmount1 = min(_adjustedAmount1, _balance1);
-        
         uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, _amount0Min, _amount1Min);
-        // // uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, min(_adjustedAmount0, _balance0), min(_adjustedAmount1, _balance1), _amount0Min, _amount1Min);
-        // return;
     }
 
     function updateLiquidityVariables(uint _originalNftId, 
