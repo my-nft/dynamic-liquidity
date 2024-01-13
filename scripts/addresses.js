@@ -74,10 +74,6 @@ const getAddresses = (network) => {
         ISWAP_ROUTER: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
         
         UniswapV3Factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
-
-        ArrakisV2Factory: "0xECb8Ffcb2369EF188A082a662F496126f66c8288",
-        ArrakisV2Helper: "0x07d2CeB4869DFE17e8D48c92A71eDC3AE564449f",
-        ArrakisV2Resolver: "0xb11bb8ad710579Cc5ED16b1C8587808109c1f193",
       };
     default:
       throw new Error(`No addresses for Network: ${network}`);
