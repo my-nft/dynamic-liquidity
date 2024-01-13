@@ -1,53 +1,75 @@
-const hhEthers = require("hardhat").ethers;
-const { Contract, ContractFactory, utils, BigNumber  } = require("ethers")
-const { getAddresses, artifacts } = require("/Users/armandmorin/Downloads/dynamic-liquidity-main/scripts/addresses.js");
-
+const { Contract} = require("ethers");
+const { ethers } = require("hardhat");
+const { getAddresses, artifacts } = require("./addresses.js");
 const addresses = getAddresses(hre.network.name);
+
+POSITION_MANAGER_ADDRESS = addresses['POSITION_MANAGER_ADDRESS']
+ISWAP_ROUTER             = addresses['ISWAP_ROUTER']
+
+t0 = "UNI"
+t1 = "WETH"
+T0 = addresses[t0]
+T1 = addresses[t1]
+
+feeTier    = "3000"
 
 MINTER_ROLE = "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
 
 async function main() {
-  const T1 = 'UNI';
-  const T0 = 'WETH';
-  const fee = "3000"
   const provider = ethers.provider
   const signer2 = await ethers.getSigners();
   const user = signer2[0].address;
   console.log("user:", user);
+  
+  console.log(`Token 0: ${t0} @ : ${T0}`);
+  console.log(`Token 1: ${t1} @ : ${T1}`);
 
-  const token0_adr = addresses[T0]
-  const token1_adr = addresses[T1]
-  console.log(`Token 0: ${T0} @ : ${token0_adr}`);
-  console.log(`Token 1: ${T1} @ : ${token1_adr}`);
+  const uniswapV3Factory = new Contract(addresses['UniswapV3Factory'], artifacts.UniswapV3Factory.abi, provider);
 
-  // const uniswapV3Factory = await hhEthers.getContractAt("IUniswapV3Factory",addresses['UniswapV3Factory']);
-
-  // const poolAddr_3000 = await uniswapV3Factory.getPool(token0_adr, token1_adr, '3000');
-  // const poolAddr_500  = await uniswapV3Factory.getPool(token0_adr, token1_adr, '500');
+  // const poolAddr_3000 = await uniswapV3Factory.getPool(T0, T1, feeTier);
+  // const poolAddr_500  = await uniswapV3Factory.getPool(T0, T1, '500');
   // console.log(`Pool address 3000 : ${poolAddr_3000} --|-- 500 : ${poolAddr_500}`);
 
   const SwapContract = new Contract(addresses['ISWAP_ROUTER'], artifacts.SwapRouter.abi, provider)
 
   // deploy new NFT position Manager
-  // PositionsNFTContract = new ContractFactory(artifacts.PositionsNFT.abi, artifacts.PositionsNFT.bytecode, user);
+  // PositionsNFTContract = new ContractFactory(artifacts.PositionsNFT.abi, artifacts.PositionsNFT.bytecode, signer2[0]);
   // PositionsNFTContract = await PositionsNFTContract.deploy();
 
-  // deploy new YFSC
-  // YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, user);
-  // YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, addresses['ISWAP_ROUTER']);
+  // YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2[0]);
+  // YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, ISWAP_ROUTER);
+
+  // const tx = await PositionsNFTContract.connect(signer2[0]).grantRole(MINTER_ROLE, YfScContract.target, {gasLimit:'1000000'})
+  // await tx.wait()
 
   // load contract YFSC & YF PM
-  
   const PositionsNFTContract = new Contract(addresses['YF_POSITION_NFT'], artifacts.PositionsNFT.abi, user);
-  const YfScContract = new Contract(addresses['YF_SC'], artifacts.YfSc.abi, user);
+  const YfScContract         = new Contract(addresses['YF_SC'], artifacts.YfSc.abi, user);
 
-  ticksUpToSend   = "1";
-  ticksDownToSend = "2";
+
+  const poolAddr = await uniswapV3Factory.getPool(T0, T1, feeTier);
+  console.log("pool Addr:", poolAddr);
+
+  const poolContract = new Contract(poolAddr, artifacts.UniswapV3Pool.abi, provider);
+
+  const tickSpacing = await poolContract.tickSpacing();
+  console.log('Tick Spacing:', Number(tickSpacing));
+
+  const slot0 = await poolContract.slot0();
+  const currentTick = slot0.tick;
+  const sqrtPriceX96 = slot0.sqrtPriceX96;
+  console.log('Current Tick:', Number(currentTick));
+  console.log('Current Price:', Math.pow(Number(sqrtPriceX96),2));
+
+  const newTickLower = Number(currentTick) - 5 * Number(tickSpacing);
+  const newTickUpper = Number(currentTick) + 5 * Number(tickSpacing);
+  console.log(`New Tick Range: [${newTickLower}, ${newTickUpper}]`);
 
   var previousLR = await YfScContract.connect(user).tickLower();
   var previousUR = await YfScContract.connect(user).tickUpper();
-  console.log(previousLR);
-  const tx01 = await YfScContract.connect(user).setRates(token0_adr, token1_adr, fee, "1", "2", { gasLimit: '2000000' })
+  console.log(`Previous Tick Range: [${previousLR}, ${previousUR}]`);
+
+  const tx01 = await YfScContract.connect(user).setRates(T0, T1, feeTier, newTickLower, previousUR, { gasLimit: '2000000' })
   await tx01.wait()
 
   const tx = await PositionsNFTContract.connect(user).grantRole(MINTER_ROLE, YfScContract.target, {gasLimit:'1000000'})
@@ -79,54 +101,71 @@ async function main() {
   console.log("YfScContract address        : ", YfScContract.target);
   console.log("PositionsNFTContract address: ", PositionsNFTContract.target);
 
-  const Token0_Contract = new Contract(token0_adr,artifacts[T0].abi,provider)
-  const Token1_Contract = new Contract(token1_adr,artifacts[T1].abi,provider)
+  const token1 = new Contract(T1, artifacts[t1].abi, provider)
+  const token0 = new Contract(T0, artifacts[t0].abi, provider)
 
-  await Token0_Contract.connect(user).approve(YfScContract.target, ethers.parseEther("1000"))
-  await Token1_Contract.connect(user).approve(YfScContract.target, ethers.parseEther("1000"))
+  await token1.connect(signer2[0]).approve(YF_SC, "1000");
+  await token0.connect(signer2[0]).approve(YF_SC, "1000");
 
-  const tx0 = await YfScContract.connect(user).mintNFT(token0_adr, token1_adr, fee, "92265983778560538", "1000000000000000", {gasLimit: '2000000'})
+  const tx0 = await YfScContract.connect(user).mintNFT(T0, T1, feeTier, "92265983778560538", "1000000000000000", {gasLimit: '2000000'})
   await tx0.wait()
 
-  const tx110 = await YfScContract.connect(user).mintNFT(token0_adr, token1_adr, fee, "92265983778560538", "1000000000000000", { gasLimit: '2000000'})
+  const tx110 = await YfScContract.connect(user).mintNFT(T0, T1, feeTier, "92265983778560538", "1000000000000000", { gasLimit: '2000000'})
   await tx110.wait()
 
-  const tx10 = await YfScContract.connect(user).mintNFT(token0_adr, token1_adr, fee, "92265983778560538", "1000000000000000", {gasLimit:'2000000'})
+  const tx10 = await YfScContract.connect(user).mintNFT(T0, T1, feeTier, "92265983778560538", "1000000000000000", {gasLimit:'2000000'})
   await tx10.wait()
 
-  const swapParams = {tokenIn: token0_adr, tokenOut: token1_adr, fee: fee,
-    recipient: user, deadline: "92265983778560", amountIn: "34234234234", amountOutMinimum: "0", sqrtPriceLimitX96: "0"}
+  const swapParams = {
+    tokenIn: T0,
+    tokenOut: T1,
+    feeTier: feeTier,
+    recipient: user,
+    deadline: "92265983778560",
+    amountIn: "34234234234", 
+    amountOutMinimum: "0", 
+    sqrtPriceLimitX96: "0"}
 
-  await Token0_Contract.connect(user).approve(addresses['ISWAP_ROUTER'], ethers.parseEther("1000"))
+  await token0.connect(user).approve(addresses['ISWAP_ROUTER'], ethers.parseEther("1000"))
 
   // perform swap to generate some fees
   const tx2 = await SwapContract.connect(user).exactInputSingle(swapParams,{ gasLimit: '2000000', value: '0'});
   await tx2.wait()
 
   // collect fees generated
-  const tx4 = await YfScContract.connect(user).collect(token0_adr, token1_adr, fee, 0, 0, {gasLimit:'2000000'})
+  const tx4 = await YfScContract.connect(user).collect(T0, T1, feeTier, 0, 0, {gasLimit:'2000000'})
   await tx4.wait()
 
   // rebalance again
-  var previousUR = await YfScContract.connect(user).tickUpper();
-  var previousLR = await YfScContract.connect(user).tickLower();
 
-  const tx00 = await YfScContract.connect(user).setRates(token0_adr, token1_adr, fee, "4",  "5", {gasLimit:'2000000'})
+  slot0 = await poolContract.slot0();
+  currentTick = slot0.tick;
+  sqrtPriceX96 = slot0.sqrtPriceX96;
+  console.log('Current Tick:', Number(currentTick));
+  console.log('Current Price:', Math.pow(Number(sqrtPriceX96),2));
+
+  newTickLower = Number(currentTick) - 5 * Number(tickSpacing);
+  newTickUpper = Number(currentTick) + 5 * Number(tickSpacing);
+  console.log(`New Tick Range: [${newTickLower}, ${newTickUpper}]`);
+
+  previousLR = await YfScContract.connect(user).tickLower();
+  previousUR = await YfScContract.connect(user).tickUpper();
+  console.log(`Previous Tick Range: [${previousLR}, ${previousUR}]`);
+
+  const tx00 = await YfScContract.connect(user).setRates(T0, T1, feeTier, newTickLower,  newTickUpper, {gasLimit:'2000000'})
   await tx00.wait()
 
   var tickUpper = await YfScContract.connect(user).tickUpper();
   var tickLower = await YfScContract.connect(user).tickLower();
 
-  console.log("Previous tickLower: ", Number(previousLR));
-  console.log("Previous tickUpper: ", Number(previousUR));
   console.log("tickUpper: ", tickUpper);
   console.log("tickLower: ", tickLower);
 
-  const tx02 = await YfScContract.connect(user).updatePosition(token0_adr, token1_adr, fee, {gasLimit:'1000000'}) 
+  const tx02 = await YfScContract.connect(user).updatePosition(T0, T1, feeTier, {gasLimit:'1000000'}) 
   await tx02.wait() 
   console.log("update position: ", tx02); 
 
-  const uniNftId = await YfScContract.connect(user).poolNftIds(token0_adr, token1_adr, fee)
+  const uniNftId = await YfScContract.connect(user).poolNftIds(T0, T1, feeTier)
   console.log("uniNftId: ", Number(uniNftId));
 
   const pool_address_1 = "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0";
@@ -171,7 +210,7 @@ async function main() {
     console.log("poolLiquidityAtState: ", Number(poolLiquidityAtState));
   }
 
-  const pendingrewardForPosition1 = await YfScContract.connect(user).getPendingrewardForPosition(token0_adr, token1_adr, fee);
+  const pendingrewardForPosition1 = await YfScContract.connect(user).getPendingrewardForPosition(T0, T1, feeTier);
   console.log("pendingrewardForPosition1: ", pendingrewardForPosition1);
 }
 

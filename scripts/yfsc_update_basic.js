@@ -1,7 +1,7 @@
 const { Contract} = require("ethers");
 const { ethers } = require("hardhat");
 const { Utils } = require("alchemy-sdk");
-const { getAddresses, artifacts } = require("/Users/armandmorin/Downloads/dynamic-liquidity-main/scripts/addresses.js");
+const { getAddresses, artifacts } = require("./addresses.js");
 const uniV3 = require('./UNI_v3.js');
 
 const addresses = getAddresses(hre.network.name);

@@ -102,7 +102,5 @@ module.exports = {
   artifacts,
   rpc_url,
   token_json_path,
-  T0,
-  T1,
   params,
 };

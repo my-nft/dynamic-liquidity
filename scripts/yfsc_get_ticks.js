@@ -1,5 +1,5 @@
 const { Contract  } = require("ethers")
-const { artifacts } = require("/Users/armandmorin/Downloads/dynamic-liquidity-main/scripts/addresses.js");
+const { artifacts } = require("./addresses.js");
 
 YF_SC =  addresses['YF_SC']
 

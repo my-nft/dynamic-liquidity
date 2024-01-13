@@ -1,5 +1,6 @@
 const { Contract} = require("ethers");
 const { ethers } = require("hardhat");
+const { getAddresses, artifacts } = require("./addresses.js");
 
 const addresses = getAddresses(hre.network.name);
 

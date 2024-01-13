@@ -1,6 +1,6 @@
 const { ethers   } = require("hardhat")
 const { Contract } = require("ethers")
-const { getAddresses, artifacts } = require("/Users/armandmorin/Downloads/dynamic-liquidity-main/scripts/addresses.js");
+const { getAddresses, artifacts } = require("./addresses.js");
 
 const addresses = getAddresses(hre.network.name);
 

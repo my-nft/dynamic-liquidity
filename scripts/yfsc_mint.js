@@ -1,10 +1,11 @@
 const { ethers   } = require("hardhat")
 const { Contract } = require("ethers")
-const { getAddresses, artifacts } = require("scripts/addresses.js");
+
+const { getAddresses, artifacts } = require("./addresses.js");
 
 const addresses = getAddresses(hre.network.name);
 
-YF_SC                    =  addresses['YF_SC']
+YF_SC =  addresses['YF_SC']
 
 t0 = "UNI"
 t1 = "WETH"
@@ -13,6 +14,7 @@ T1 = addresses[t1]
 
 tick_lower = "-27060" 
 tick_upper = "-20820" 
+feeTier = "3000"
 
 async function approveIfNeeded(token, owner, spender, requiredAmount) {
   const currentAllowance = await token.allowance(owner, spender);
@@ -31,11 +33,11 @@ async function main() {
 
   const YfScContract = new Contract(YF_SC,artifacts.YfSc.abi,provider)
 
-  const token1 = new Contract(T1, artifacts[t1].abi, provider)
-  const token0 = new Contract(T0, artifacts[t0].abi, provider)
+  // const token1 = new Contract(T1, artifacts[t1].abi, provider)
+  // const token0 = new Contract(T0, artifacts[t0].abi, provider)
 
-  await token1.connect(signer2[0]).approve(YF_SC, "1000");
-  await token0.connect(signer2[0]).approve(YF_SC, "1000");
+  // await token1.connect(signer2[0]).approve(YF_SC, "1000");
+  // await token0.connect(signer2[0]).approve(YF_SC, "1000");
 
   const tx2 = await YfScContract.connect(signer2[0]).mintNFT(T0, T1, feeTier, tick_upper, tick_lower, {gasLimit: '2000000' })
   await tx2.wait()

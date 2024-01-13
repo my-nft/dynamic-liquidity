@@ -1,5 +1,5 @@
 const { Contract, ContractFactory } = require("ethers")
-const { getAddresses, artifacts } = require("scripts/addresses.js");
+const { getAddresses, artifacts } = require("./addresses.js");
 
 const addresses = getAddresses(hre.network.name);
 
