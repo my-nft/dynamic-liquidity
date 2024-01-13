@@ -17,9 +17,11 @@ tick_upper0 = "1000000000000000"
 tick_lower1 = "45159914194900000" 
 tick_upper1 = "2000000000000000" 
 
+feeTier = "3000"
+
 async function main() {
   const signer = await ethers.getSigners();
-  console.log("signer1:", signer[0]);
+  console.log("signer1:", signer[0].getAddress());
   const provider = ethers.provider
 
   const YfScContract = new Contract(YF_SC, artifacts.YfSc.abi, provider)
@@ -31,8 +33,8 @@ async function main() {
   await token1.connect(signer[0]).approve(YF_SC, "1000");
   await token0.connect(signer[0]).approve(YF_SC, "1000");
 
-  await token1.connect(signer[1]).approve(YF_SC, "1000");
-  await token0.connect(signer[1]).approve(YF_SC, "1000");
+  //await token1.connect(signer[1]).approve(YF_SC, "1000");
+  //await token0.connect(signer[1]).approve(YF_SC, "1000");
 
   console.log("approved");
 

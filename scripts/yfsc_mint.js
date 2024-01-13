@@ -1,6 +1,5 @@
 const { ethers   } = require("hardhat")
 const { Contract } = require("ethers")
-
 const { getAddresses, artifacts } = require("./addresses.js");
 
 const addresses = getAddresses(hre.network.name);
@@ -12,8 +11,6 @@ t1 = "WETH"
 T0 = addresses[t0]
 T1 = addresses[t1]
 
-tick_lower = "-27060" 
-tick_upper = "-20820" 
 feeTier = "3000"
 
 async function approveIfNeeded(token, owner, spender, requiredAmount) {
@@ -39,7 +36,29 @@ async function main() {
   // await token1.connect(signer2[0]).approve(YF_SC, "1000");
   // await token0.connect(signer2[0]).approve(YF_SC, "1000");
 
-  const tx2 = await YfScContract.connect(signer2[0]).mintNFT(T0, T1, feeTier, tick_upper, tick_lower, {gasLimit: '2000000' })
+  const uniswapV3Factory = new Contract(addresses['UniswapV3Factory'], artifacts.UniswapV3Factory.abi, provider);
+
+  const poolAddr = await uniswapV3Factory.getPool(T0, T1, feeTier);
+  console.log("pool Addr:", poolAddr);
+
+  const poolContract = new Contract(poolAddr, artifacts.UniswapV3Pool.abi, provider);
+
+  const tickSpacing = await poolContract.tickSpacing();
+  console.log('Tick Spacing:', Number(tickSpacing));
+
+  const slot0 = await poolContract.slot0();
+  const currentTick = slot0.tick;
+  const sqrtPriceX96 = slot0.sqrtPriceX96;
+  console.log('Current Tick:', Number(currentTick));
+  console.log('Current Price:', Math.pow(Number(sqrtPriceX96),2));
+
+  const newTickLower = Number(currentTick) - 5 * Number(tickSpacing);
+  const newTickUpper = Number(currentTick) + 5 * Number(tickSpacing);
+  console.log(`New Tick Range: [${newTickLower}, ${newTickUpper}]`);
+
+  console.log("Starting mint!")
+
+  const tx2 = await YfScContract.connect(signer2[0]).mintNFT(T0, T1, feeTier, String(newTickUpper), String(newTickLower), {gasLimit: '2000000' })
   await tx2.wait()
 
   console.log("done!")
