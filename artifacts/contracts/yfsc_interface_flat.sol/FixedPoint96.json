@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "FixedPoint96",
+  "sourceName": "contracts/yfsc_interface_flat.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220823e952d592f7941ca5e6da94f0554442c7a1e00beaa31f54259ebc81354747b64736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220823e952d592f7941ca5e6da94f0554442c7a1e00beaa31f54259ebc81354747b64736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "PRBMathUD60x18",
+  "sourceName": "prb-math/contracts/PRBMathUD60x18.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220124c707ad2625afa7e151d2916718d16e92b80dac19f427e104f75ff8ea8126564736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220124c707ad2625afa7e151d2916718d16e92b80dac19f427e104f75ff8ea8126564736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

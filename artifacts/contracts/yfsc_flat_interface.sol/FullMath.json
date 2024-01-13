@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "FullMath",
+  "sourceName": "contracts/yfsc_flat_interface.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220cbcf5d9b1f3a9898def6c3f6f186be7946a0a8c05c828811bb950093ecbfea0b64736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220cbcf5d9b1f3a9898def6c3f6f186be7946a0a8c05c828811bb950093ecbfea0b64736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Counters",
+  "sourceName": "contracts/yfsc_flat_interface.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220680ee76aacec0ad675151625ed8caec1f713a9749d0e4e6e9eb29dc48160d49964736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220680ee76aacec0ad675151625ed8caec1f713a9749d0e4e6e9eb29dc48160d49964736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

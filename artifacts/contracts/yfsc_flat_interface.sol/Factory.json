@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Factory",
+  "sourceName": "contracts/yfsc_flat_interface.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_token0",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_token1",
+          "type": "address"
+        },
+        {
+          "internalType": "uint24",
+          "name": "_fee",
+          "type": "uint24"
+        }
+      ],
+      "name": "getPool",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080806040523460145760a5908161001a8239f35b600080fdfe6080806040526004361015601257600080fd5b600090813560e01c631698ee8214602857600080fd5b3460675760603660031901126067576001600160a01b0360043581811603606b576024359081160360675760443562ffffff8116036067576020918152f35b5080fd5b8280fdfea26469706673582212200067ce16f6dda224c24be8b0387ce662c639e3aa2ac9b46603dcba95cf564afb64736f6c63430008130033",
+  "deployedBytecode": "0x6080806040526004361015601257600080fd5b600090813560e01c631698ee8214602857600080fd5b3460675760603660031901126067576001600160a01b0360043581811603606b576024359081160360675760443562ffffff8116036067576020918152f35b5080fd5b8280fdfea26469706673582212200067ce16f6dda224c24be8b0387ce662c639e3aa2ac9b46603dcba95cf564afb64736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

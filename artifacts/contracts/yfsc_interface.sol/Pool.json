@@ -1,0 +1,67 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Pool",
+  "sourceName": "contracts/yfsc_interface.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "slot0",
+      "outputs": [
+        {
+          "internalType": "uint160",
+          "name": "sqrtPriceX96",
+          "type": "uint160"
+        },
+        {
+          "internalType": "int24",
+          "name": "tick",
+          "type": "int24"
+        },
+        {
+          "internalType": "uint16",
+          "name": "observationIndex",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint16",
+          "name": "observationCardinality",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint16",
+          "name": "observationCardinalityNext",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint8",
+          "name": "feeProtocol",
+          "type": "uint8"
+        },
+        {
+          "internalType": "bool",
+          "name": "unlocked",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "tickSpacing",
+      "outputs": [
+        {
+          "internalType": "int24",
+          "name": "",
+          "type": "int24"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608080604052346100155760f7908161001b8239f35b600080fdfe6080806040526004361015601257600080fd5b600090813560e01c9081633850c7bd146055575063d0c93a7c14603457600080fd5b3460525780600319360112605257602060015460020b604051908152f35b80fd5b90503460bd578160031936011260bd5760ff60e0925460018060a01b03811683528060a01c60020b602084015261ffff808260b81c166040850152808260c81c1660608501528160d81c166080840152818160e81c1660a084015260f01c16151560c0820152f35b5080fdfea2646970667358221220cfa954f7d7afa884aa1b5f014090bbbc8fdcfd3c0a5784ff8e77d1e07f2e376a64736f6c63430008130033",
+  "deployedBytecode": "0x6080806040526004361015601257600080fd5b600090813560e01c9081633850c7bd146055575063d0c93a7c14603457600080fd5b3460525780600319360112605257602060015460020b604051908152f35b80fd5b90503460bd578160031936011260bd5760ff60e0925460018060a01b03811683528060a01c60020b602084015261ffff808260b81c166040850152808260c81c1660608501528160d81c166080840152818160e81c1660a084015260f01c16151560c0820152f35b5080fdfea2646970667358221220cfa954f7d7afa884aa1b5f014090bbbc8fdcfd3c0a5784ff8e77d1e07f2e376a64736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

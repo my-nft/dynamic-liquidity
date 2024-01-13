@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "PRBMath",
+  "sourceName": "contracts/yfsc_flat_interface.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220b25ecddb63ade4eae6913c4d2162c43d1cb10bf2f449e750c4a5ff70720acf9364736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220b25ecddb63ade4eae6913c4d2162c43d1cb10bf2f449e750c4a5ff70720acf9364736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

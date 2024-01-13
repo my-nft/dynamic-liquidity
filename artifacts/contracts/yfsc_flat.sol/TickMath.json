@@ -1,0 +1,21 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "TickMath",
+  "sourceName": "contracts/yfsc_flat.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "R",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "T",
+      "type": "error"
+    }
+  ],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea264697066735822122035fcbbbb2dfa5a2f4a5c2d9b9e6b88c3732a602b74f0985b1d7d5c3e366d26ed64736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea264697066735822122035fcbbbb2dfa5a2f4a5c2d9b9e6b88c3732a602b74f0985b1d7d5c3e366d26ed64736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

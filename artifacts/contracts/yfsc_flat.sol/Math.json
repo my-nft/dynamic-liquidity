@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Math",
+  "sourceName": "contracts/yfsc_flat.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea264697066735822122019f719d2a829f61231ec7a8fbeb328e560d1eb2197ede9e15bfaf1b4aa93520164736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea264697066735822122019f719d2a829f61231ec7a8fbeb328e560d1eb2197ede9e15bfaf1b4aa93520164736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

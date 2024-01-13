@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "console",
+  "sourceName": "contracts/yfsc_interface_flat.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220729eae173c5e84d03c61babbd9caa99523e5089d8cabef1cbede7e528e55cd3864736f6c63430008130033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220729eae173c5e84d03c61babbd9caa99523e5089d8cabef1cbede7e528e55cd3864736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
