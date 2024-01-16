@@ -32,7 +32,7 @@ async function main() {
   console.log("previous UR", Number(previousUR));
   console.log("previous LR", Number(previousLR));
 
-  const tx2 = await YfScContract.connect(signer2[0]).updatePosition(T0, T1, feeTier, "5", "5",{gasLimit: '2000000'}) 
+  const tx2 = await YfScContract.connect(signer2[0]).updatePosition(T0, T1, feeTier, "1", "1",{gasLimit: '2000000'}) 
   const receipt2 = await tx2.wait();
 
   console.log("updatePosition transaction receipt:");
