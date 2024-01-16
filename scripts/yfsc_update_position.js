@@ -20,11 +20,11 @@ async function main() {
   const provider = ethers.provider
   const YfScContract = new Contract(YF_SC, artifacts.YfSc.abi, provider)
 
-  const token1 = new Contract(T1, artifacts[t1].abi, provider)
-  const token0 = new Contract(T0, artifacts[t0].abi, provider)
+  // const token1 = new Contract(T1, artifacts[t1].abi, provider)
+  // const token0 = new Contract(T0, artifacts[t0].abi, provider)
 
-  await token1.connect(signer2[0]).approve(YF_SC, ethers.parseEther("1000"))
-  await token0.connect(signer2[0]).approve(YF_SC, ethers.parseEther("1000"))
+  // await token1.connect(signer2[0]).approve(YF_SC, ethers.parseEther("1000"))
+  // await token0.connect(signer2[0]).approve(YF_SC, ethers.parseEther("1000"))
 
   var previousLR = await YfScContract.tickLower();
   var previousUR = await YfScContract.tickUpper();
@@ -32,14 +32,13 @@ async function main() {
   console.log("previous UR", Number(previousUR));
   console.log("previous LR", Number(previousLR));
 
-  const tx2 = await YfScContract.connect(signer2[0]).updatePosition(T0, T1, feeTier, "3", "3",{gasLimit: '1000000'}) 
+  const tx2 = await YfScContract.connect(signer2[0]).updatePosition(T0, T1, feeTier, "5", "5",{gasLimit: '2000000'}) 
   const receipt2 = await tx2.wait();
 
   console.log("updatePosition transaction receipt:");
   console.log("Tx Hash :", receipt2.transactionHash);
   console.log("Block Nb:", receipt2.blockNumber);
   console.log("Gas Used:", receipt2.gasUsed.toString());
-  console.log("Logs    :", receipt2.logs);
 
   if (receipt2.status === 1) {
     console.log("updatePosition transaction successful");
