@@ -11,8 +11,6 @@ t1 = "WETH"
 T0 = addresses[t0]
 T1 = addresses[t1]
 
-tick_lower = "-27060" 
-tick_upper = "-20820" 
 feeTier    = "3000"
 
 async function main() {
@@ -31,29 +29,10 @@ async function main() {
   var previousLR = await YfScContract.tickLower();
   var previousUR = await YfScContract.tickUpper();
 
-  console.log("UR", Number(previousUR));
-  console.log("LR", Number(previousLR));
+  console.log("previous UR", Number(previousUR));
+  console.log("previous LR", Number(previousLR));
 
-
-  const tx1 = await YfScContract.connect(signer2[0]).setTicks(tick_lower,tick_upper,{gasLimit:'1000000'})
-  const receipt1 = await tx1.wait();
-
-  console.log("setTicks transaction receipt:");
-  console.log("Tx Hash :", receipt1.transactionHash);
-  console.log("Block Nb:", receipt1.blockNumber);
-  console.log("Gas Used:", receipt1.gasUsed.toString());
-  console.log("Logs    :", receipt1.logs);
-
-  // Check if the transaction was successful
-  if (receipt1.status === 1) {
-    console.log("setTicks transaction successful");
-  } else {
-    console.error("setTicks transaction failed");
-    // Additional error handling if needed
-  }
-  console.log("");
-
-  const tx2 = await YfScContract.connect(signer2[0]).updatePosition(T0, T1, feeTier, {gasLimit: '1000000'}) 
+  const tx2 = await YfScContract.connect(signer2[0]).updatePosition(T0, T1, feeTier, "3", "3",{gasLimit: '1000000'}) 
   const receipt2 = await tx2.wait();
 
   console.log("updatePosition transaction receipt:");
@@ -67,6 +46,12 @@ async function main() {
   } else {
     console.error("updatePosition transaction failed");
   }
+
+  var currentLR = await YfScContract.tickLower();
+  var currentUR = await YfScContract.tickUpper();
+
+  console.log("current UR", Number(currentLR));
+  console.log("current LR", Number(currentUR));
 
   console.log("done!")
 }
