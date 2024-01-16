@@ -20,11 +20,15 @@ async function approveIfNeeded(token, owner, spender, requiredAmount) {
       const amountToApprove = requiredAmount.sub(currentAllowance);
       await token.connect(owner).approve(spender, amountToApprove);
   }
+  else {
+      console.log("Already approved");
+  }
 }
 
 async function main() {
   const signer2 = await ethers.getSigners();
-  console.log("signer: ", signer2[0].getAddress());
+  const usr_adr = await signer2[0].getAddress()
+  console.log("signer: ", usr_adr);
 
   const provider = ethers.provider
 
@@ -36,30 +40,36 @@ async function main() {
   // await token1.connect(signer2[0]).approve(YF_SC, "1000");
   // await token0.connect(signer2[0]).approve(YF_SC, "1000");
 
-  const uniswapV3Factory = new Contract(addresses['UniswapV3Factory'], artifacts.UniswapV3Factory.abi, provider);
-
-  const poolAddr = await uniswapV3Factory.getPool(T0, T1, feeTier);
-  console.log("pool Addr:", poolAddr);
-
-  const poolContract = new Contract(poolAddr, artifacts.UniswapV3Pool.abi, provider);
-
-  const tickSpacing = await poolContract.tickSpacing();
-  console.log('Tick Spacing:', Number(tickSpacing));
-
-  const slot0 = await poolContract.slot0();
-  const currentTick = slot0.tick;
-  const sqrtPriceX96 = slot0.sqrtPriceX96;
-  console.log('Current Tick:', Number(currentTick));
-  console.log('Current Price:', Math.pow(Number(sqrtPriceX96),2));
-
-  const newTickLower = Number(currentTick) - 5 * Number(tickSpacing);
-  const newTickUpper = Number(currentTick) + 5 * Number(tickSpacing);
-  console.log(`New Tick Range: [${newTickLower}, ${newTickUpper}]`);
-
   console.log("Starting mint!")
+  const a = 0.43845131638258594
+  const b = 0.110433
+  const am = BigInt(a * 10**18)
+  const bm = BigInt(b * 10**18)
 
-  const tx2 = await YfScContract.connect(signer2[0]).mintNFT(T0, T1, feeTier, String(newTickUpper), String(newTickLower), {gasLimit: '2000000' })
+  approveIfNeeded(token0, signer2[0], YF_SC, am)
+  approveIfNeeded(token1, signer2[0], YF_SC, bm)
+
+  const gasPrice = await provider.getGasPrice()
+
+  console.log("gasPrice", gasPrice.toString())
+
+  const gasLimit = await YfScContract.connect(signer2[0]).estimateGas.mintNFT(T0, T1, feeTier, am, bm, "3", "3", {gasPrice: gasPrice.toString() })
+
+  const tx2 = await YfScContract.connect(signer2[0]).mintNFT(T0, T1, feeTier, am, bm, "3", "3", {gasLimit: '2000000' })
   await tx2.wait()
+
+  var previousLR = await YfScContract.tickLower();
+  var previousUR = await YfScContract.tickUpper();
+
+  console.log("current UR", Number(previousUR));
+  console.log("current LR", Number(previousLR));
+
+  // transaction succeeded
+  console.log("mintNFT transaction receipt:");
+  console.log("Tx Hash :", tx2.hash);
+  console.log("Block Nb:", tx2.blockNumber);
+  console.log("Gas Used:", tx2.gasUsed.toString());
+  console.log("Logs    :", tx2.logs);
 
   console.log("done!")
 }
