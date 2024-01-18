@@ -85,6 +85,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
     mapping(address => mapping(uint=>uint)) public userNftPerPool;
 
     mapping(uint=>mapping(uint=>uint128)) public liquidityForUserInPoolAtState; // nft --> state --> liquidity 
+    mapping(uint=>mapping(uint=>uint128)) public poolChangeCoefficient; // nft --> state --> liquidity 
     
     mapping(uint => mapping(uint => uint)) public statesIdsForPosition;
 
@@ -94,6 +95,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
 
     mapping(uint => uint) public totalClaimedforPositionToken0;
     mapping(uint => uint) public totalClaimedforPositionToken1;
+
 
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -115,7 +117,7 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
         _tokenIdCounter.increment();
         _safeMint(_receiver, tokenId);
         userNftPerPool[_receiver][_uniswapNftId] = tokenId;   
-        updateLiquidityForUser(tokenId, _liquidity, _state);
+        // updateLiquidityForUser(tokenId, _liquidity, _state);
     }
 
     function getUserNftPerPool(address receiver, uint uniswapNftId) view public returns (uint) {
@@ -127,8 +129,10 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
         if(statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] < _state){
             totalStatesForPosition[positionNftId]++;
         }
-        statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;
+        statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;   
     }
+
+    
 
     function updateStatesIdsForPosition(uint positionNftId, uint _state)public onlyRole(MINTER_ROLE) {
         totalStatesForPosition[positionNftId]++;
@@ -151,8 +155,25 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
     }
 
     function getLiquidityForUserInPoolAtState(uint _userPositionNft, uint _state) public view returns(uint128 liquidity){
-        liquidity = liquidityForUserInPoolAtState[_userPositionNft][_state];
-        return liquidity;
+        // we need to handle the case update liquidity
+        uint _totalStateIdsForPosition = totalStatesForPosition[_userPositionNft];
+        if(_state >= statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition]) {
+            uint stateId = statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition];
+            return liquidityForUserInPoolAtState[_userPositionNft][stateId];
+        }else{
+            // for(uint i = _state ; i > 0; i--){
+            //     if (liquidityForUserInPoolAtState[_userPositionNft][i] > 0){
+            //         return liquidityForUserInPoolAtState[_userPositionNft][i];
+            //     }
+            // }
+            
+            for(uint i = _totalStateIdsForPosition ; i > 0; i--){
+                if (statesIdsForPosition[_userPositionNft][i] <= _state){
+                    return liquidityForUserInPoolAtState[_userPositionNft][i];
+                }
+            }
+        }
+        return 0;
     }
 
     function getStatesIdsForPosition(uint _userPositionNft, uint _stateId) public view returns(uint id){
@@ -282,7 +303,7 @@ contract YfSc{
     /// @return owner the address of this smart contract's deployer
     address public owner;
     /// fees distribution 
-    uint public statesCounter = 1; 
+    uint public statesCounter; 
     // last state the liquidty of a uniswap nft was updated 
     mapping(uint=>uint) public liquidityLastStateUpdate; // nft --> last State Update for liquidity for Uni3 NFT
     // for a given uniswap nft, and a given state, returns the corresponding liquidty 
@@ -313,7 +334,7 @@ contract YfSc{
     uint private quotient = 10000; 
     // big number used to collect all the rewards from the pool in a given transaction 
     uint128 private max_collect = 1e27; 
-    uint public liquidityLockTime = 3600 * 24 * 30; // one month liquidty lock time 
+    uint public liquidityLockTime = 0; //3600 * 24 * 30; // one month liquidty lock time 
     // track last deposit time for each user position, to be able to enforce the lock time 
     mapping(uint => uint) public liquidityLastDepositTime; // position nft => timestamp 
     // Position NFT contract, to generate and track users positions
@@ -330,15 +351,47 @@ contract YfSc{
     mapping(address => uint) public totalRewards; 
     mapping(uint => mapping(uint => uint)) public poolLiquidityChangeAmount; // pool nft => state => coef /10000 to track liquidity amount change durint rebalance in a given state
     mapping(uint => mapping(uint => uint)) public poolLiquidityChangeDirection; // 1 for decrease, 2 for increase
+    
+    // mapping(uint => mapping(uint => uint)) public poolCoefficientChangeIds;
+    // mapping(uint => mapping(uint => uint)) public poolChnageCoefficient;
+    
     // Events
     // event NftMinted(uint tokenId, uint liquidityInPool, uint amount0, uint amount1);
     // event IncreaseLiquidity(uint128 liquidity, uint _amount0, uint _amount1, uint uniNft, uint yfNft);
-    uint public public_balance0;
-    uint public public_balance1;
-    uint public public_amount0;
-    uint public public_amount1;
-    uint public public_adjustedAmount0;
-    uint public public_adjustedAmount1;
+    // uint public public_balance0;
+    // uint public public_balance1;
+    // uint public public_amount0;
+    // uint public public_amount1;
+    // uint public public_adjustedAmount0;
+    // uint public public_adjustedAmount1;
+
+    uint public public_lastLiquidityUpdateStateForPosition;
+    uint public public_userPositionLastUpdateState;
+
+    uint public public_poolNftId;
+    uint128 public public_liquidityToRemove;
+    uint128 public public_userAddedLiquidity;
+
+    uint public public_timestamp;
+    bool public public_rebalance;
+
+    uint public public_totalCollected0 ;
+    uint public public_totalCollected1 ; 
+
+    uint public public_totalPendingRewards0 ; 
+    uint public public_totalPendingRewards1 ; 
+
+    uint public public_positionRewardToken0 ; 
+    uint public public_positionRewardToken1 ; 
+
+    uint public public_maxStateIdForNFT;
+
+    uint public public_statesCounter;
+
+    uint public public_previousLiquidity;
+    uint public public_newLiquidity;
+    uint public public_userPreviousLiquidity;
+    
     /**
      * Contract initialization.
      */
@@ -500,14 +553,11 @@ contract YfSc{
 
         (uint _adjustedAmount0, uint _adjustedAmount1) = liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
 
-        public_amount0 = _adjustedAmount0;
-        public_amount1 = _adjustedAmount1;
-
-        if (_adjustedAmount0 < 98*_amount0/100){
+        if (_adjustedAmount0 < 95*_amount0/100){ // 95% to make sure it s excess, and not tick rounding math
             _adjustedAmount1 += swapExess(_token1, _token0, _fee, (_amount0 - _adjustedAmount0)/2);
             _adjustedAmount0 = _adjustedAmount0 + (_amount0 - _adjustedAmount0)/2;
 
-        }else if (_adjustedAmount1 < 98*_amount1/100){
+        }else if (_adjustedAmount1 < 95*_amount1/100){
             _adjustedAmount0 += swapExess(_token1, _token0, _fee,(_amount1 - _adjustedAmount1)/2) ;
             _adjustedAmount1 = _adjustedAmount1 + (_amount1 - _adjustedAmount1)/2;
         }
@@ -517,30 +567,52 @@ contract YfSc{
         token1.approve(address(nonfungiblePositionManager), _adjustedAmount1);
         uint _balance0 = token0.balanceOf(address(this));
         uint _balance1 = token1.balanceOf(address(this));
-        public_balance0 = _balance0;
-        public_balance1 = _balance1;
-        public_adjustedAmount0 = _adjustedAmount0;
-        public_adjustedAmount1 = _adjustedAmount1;
-        uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, _amount0Min, _amount1Min);
+
+        uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, _amount0Min, _amount1Min, true);
     }
 
     function updateLiquidityVariables(uint _originalNftId, 
                                       uint128 _newLiquidity, 
                                       bool _rebalance) internal {
+        // liquidityLastDepositTime[10] = 100;
         totalLiquidityAtStateForNft[_originalNftId][statesCounter] = _newLiquidity;
         if (_rebalance) return;
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
         liquidityLastDepositTime[_userNftId] = block.timestamp;
-        uint128 _previousLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
+        // uint128 _previousLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
+        uint128 _previousLiq = totalLiquidityAtStateForNft[_originalNftId][statesCounter - 1];
+        uint128 _userLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter);
+        // public_userAddedLiquidity = _previousLiq ;// - _newLiquidity;
+        // public_previousLiquidity = _previousLiq;
+        // public_newLiquidity = _newLiquidity;
 
+        public_userPreviousLiquidity = _userLiq ;
+        // if (_rebalance) return;
+        // liquidityLastDepositTime[10] = 100;
         if(_previousLiq > _newLiquidity){
+            // uint128 val = _userLiq > (_previousLiq - _newLiquidity) ? (_userLiq - (_previousLiq - _newLiquidity)) : 0;
+            // positionsNFT.updateLiquidityForUser(_userNftId, 
+            // val, 
+            // statesCounter);
+            // if (_rebalance) return;
             positionsNFT.updateLiquidityForUser(_userNftId, 
-            _previousLiq - (_previousLiq - _newLiquidity), 
+            _userLiq - (_previousLiq - _newLiquidity), 
             statesCounter);
+            // public_userAddedLiquidity = _previousLiq - _newLiquidity ;// - _newLiquidity;
+            // public_previousLiquidity = _userLiq ;
+            // public_newLiquidity = _newLiquidity;
+            
         } else {
             positionsNFT.updateLiquidityForUser(_userNftId, 
-            _previousLiq + (_newLiquidity - _previousLiq), 
+            _userLiq + (_newLiquidity - _previousLiq), 
             statesCounter);
+            liquidityLastDepositTime[_userNftId] = block.timestamp;
+
+            public_userAddedLiquidity = _newLiquidity - _previousLiq ; // - _newLiquidity;
+            public_previousLiquidity = _previousLiq;
+            public_newLiquidity = _userLiq;
+            public_statesCounter = statesCounter;
+            // liquidityLastDepositTime[10] = 100;
         }
     }
 
@@ -551,8 +623,7 @@ contract YfSc{
         liquidityLastStateUpdate[_originalNftId] = statesCounter;
         if(_userNftId == 0) return; // if rebalance no user nft to update
         uint positionNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
-        positionsNFT.updateStatesIdsForPosition(positionNftId, statesCounter);
-        
+        positionsNFT.updateStatesIdsForPosition(positionNftId, statesCounter);    
     }
 
     function updateRewardVariables(uint _originalNftId, uint _rewardAmount0, uint _rewardAmount1) internal{
@@ -583,7 +654,8 @@ contract YfSc{
                             uint _amount0, 
                             uint _amount1, 
                             uint _amount0Min, 
-                            uint _amount1Min
+                            uint _amount1Min,
+                            bool _rebalance
                         ) internal returns(uint128 liquidity){
 
         MintParams memory mintParams;
@@ -613,7 +685,10 @@ contract YfSc{
 
         poolNftIds[_token0][_token1][_fee] = tokenId;
         poolNftIds[_token1][_token0][_fee] = tokenId;
-        positionsNFT.safeMint(tokenId, msg.sender, _liquidity, statesCounter);
+        if (! _rebalance){
+            positionsNFT.safeMint(tokenId, msg.sender, _liquidity, statesCounter);
+        }
+        
 
         liquidity = _liquidity;
         return liquidity;
@@ -696,10 +771,6 @@ contract YfSc{
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1); 
-        
-        uint oldBalanceToken0 = token0.balanceOf(address(this));
-        uint oldBalanceToken1 = token1.balanceOf(address(this));
-        
         setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
 
         (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
@@ -718,7 +789,7 @@ contract YfSc{
 
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
-            _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+            _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min, false);
             uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
             uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
 
@@ -728,7 +799,7 @@ contract YfSc{
             uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
             uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
 
-            updateStateCounters(_originalNftId, _userNftId); // not correct, what if no nft id so far ? 
+            // updateStateCounters(_originalNftId, _userNftId); // not correct, what if no nft id so far ? 
             
             collect(_token0, _token1, _fee, 0, 0, false);
             _newLiquidity = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
@@ -768,43 +839,78 @@ contract YfSc{
         uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
         
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
-        require(liquidityLastDepositTime[_userNftId] < block.timestamp + liquidityLockTime, "liquidity locked !");
+        uint128 _liquidityToRemove;
+        public_rebalance = _rebalance;
+        if (_rebalance){
+            (,,,,,,,uint128 _liquidityInPool,,,, ) = nonfungiblePositionManager.positions(_poolNftId);
+            _liquidityToRemove = _liquidityInPool;
+            public_timestamp = block.timestamp;
+        }else{
+            public_timestamp = block.timestamp;
+            // require(liquidityLastDepositTime[_userNftId] + liquidityLockTime < block.timestamp , "liquidity locked !");
+            uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
+            uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition);
+            uint128 _userLiquidity = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
+            _liquidityToRemove = _userLiquidity * _purcentage /100;
+            public_lastLiquidityUpdateStateForPosition = lastLiquidityUpdateStateForPosition;
+            public_userPositionLastUpdateState = userPositionLastUpdateState;
+            public_poolNftId = _poolNftId;
+            public_liquidityToRemove = _liquidityToRemove; 
+        }
+ 
+        uint _amount0Min = 0; uint _amount1Min = 0; 
+        // collect the rewards befoore collect decrease liquidity 
+        CollectParams memory collectParams;
+
+        collectParams = CollectParams(
+                    _poolNftId, 
+                    address(this), 
+                    max_collect, 
+                    max_collect); 
         
-        uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
-        uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition);
-        uint128 _userLiquidity = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
+        // return(0,0);
+        
+        (uint _totalPendingRewards0, uint _totalPendingRewards1) = nonfungiblePositionManager.collect(collectParams);
+        // return(0,0);
+        // (uint _totalPendingRewards0, uint _totalPendingRewards1) = (0,0);
 
-        uint128 _liquidityToRemove = _userLiquidity * _purcentage / 100;
+        public_totalPendingRewards0 = _totalPendingRewards0;
+        public_totalPendingRewards1 = _totalPendingRewards1;
+        public_statesCounter = statesCounter;
+        // return(0,0);
 
-        uint _amount0Min = 0; uint _amount1Min = 0;
-
-        DecreaseLiquidityParams memory decreaseLiquidityParams;
-        decreaseLiquidityParams = DecreaseLiquidityParams(
+        DecreaseLiquidityParams memory decreaseLiquidityParams; 
+        decreaseLiquidityParams = DecreaseLiquidityParams( 
                     _poolNftId, 
                     _liquidityToRemove, 
                     _amount0Min, 
                     _amount1Min, 
                     block.timestamp + deadline); 
-        (,,,,,,,uint128 _liquidity,,,uint128 _totalPendingRewards0, uint128 _totalPendingRewards1) = nonfungiblePositionManager.positions(_poolNftId);
-
+        (,,,,,,,uint128 _liquidity,,,, ) = nonfungiblePositionManager.positions(_poolNftId);
         // returns the liquidity amounts
         (uint _amount0, uint _amount1) = nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
+        // (uint _amount0, uint _amount1) = (0,0);
+        // return (_amount0, _amount1);
+
         _liquidity = _liquidity - _liquidityToRemove;
 
         // collects only the rewards, so needs the the liquidity tokens amounts 
         collect(_token0, _token1, _fee, _totalPendingRewards0, _totalPendingRewards1, _rebalance);
-
+        // collect(_token0, _token1, _fee, _totalPendingRewards0, _totalPendingRewards1, false);
+        
         updateStateCounters(_originalNftId, _userNftId);
-        updateLiquidityVariables(_originalNftId, _liquidity, _rebalance);
+        // return (_amount0, _amount1);
+        // updateLiquidityVariables(_originalNftId, _liquidity, _rebalance);
+        updateLiquidityVariables(_originalNftId, _liquidity, true);
         return (_amount0, _amount1);
     }
-    
+
     /// @notice returns the pending rewards for a user in a given pool
     /// @dev Public function
     /// @param _token0 The first token of the liquidity pool pair
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
-    function getPendingrewardForPosition(address _token0, address _token1, uint _fee) view public returns (uint reward0, uint reward1){
+    function getPendingrewardForPosition(address _token0, address _token1, uint _fee)  public returns (uint reward0, uint reward1){
         uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee]; // get first pool nft id 
         uint _poolNftId = poolNftIds [_token0][_token1][_fee]; // get first pool nft id 
         uint _userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
@@ -814,15 +920,17 @@ contract YfSc{
         uint corresponginPositionNftState = positionsNFT.getStatesIdsForPosition(_userPositionNft, totalStatesForPosition);
 
         uint128 liquidityAtLastStateForPosition = positionsNFT.getLiquidityForUserInPoolAtState(_userPositionNft, corresponginPositionNftState);
+
         uint _lastClaimState = positionsNFT.lastClaimForPosition(_userPositionNft);
 
         uint _rewardToken0;
         uint _rewardToken1;
         
         uint _maxStateForNft = totalStatesForNft[_originalNftId];
-        _maxStateForNft = _maxStateForNft > 0 ? _maxStateForNft : 1;
-        uint _maxStateIdForNft = statesIdsForNft[_originalNftId][_maxStateForNft - 1]; // ? -1 because statesCounter starts at 1, and statesIdsForNft starts at 0
-     
+        // _maxStateForNft = _maxStateForNft > 0 ? _maxStateForNft : 1;
+        uint _maxStateIdForNft = statesIdsForNft[_originalNftId][_maxStateForNft]; // removed the - 1 ? -1 because statesCounter starts at 1, and statesIdsForNft starts at 0
+        public_maxStateIdForNFT = _maxStateIdForNft;
+        // need loop untiol max nft ids then from max nft ids to max state counter 
         for(uint _state = _lastClaimState; _state <= _maxStateIdForNft ; _state++){
             // Not enough ! what about rewards collected outside of position traced states ?
             uint _correspondingNftState = statesIdsForNft[_originalNftId][_state];
@@ -833,7 +941,10 @@ contract YfSc{
                 _rewardToken1 += liquidityAtLastStateForPosition * 
                 rewardAtStateForNftToken1[_originalNftId][_correspondingNftState] / poolLiquidityAtState;
             }
+
         }
+
+        // need to add for stateCounter 
 
         reward0 = _rewardToken0;
         reward1 = _rewardToken1;
@@ -851,8 +962,8 @@ contract YfSc{
     function collect(address _token0, 
     address _token1, 
     uint _fee, 
-    uint128 _totalPendingRewards0, 
-    uint128 _totalPendingRewards1, 
+    uint _totalPendingRewards0, 
+    uint _totalPendingRewards1, 
     bool _rebalance) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
@@ -867,8 +978,9 @@ contract YfSc{
                     address(this), 
                     max_collect, 
                     max_collect); 
+        
         (uint _totalCollected0, uint _totalCollected1) = nonfungiblePositionManager.collect(collectParams);
-
+        return;
         updateRewardVariables(_originalNftId, _totalPendingRewards0, _totalPendingRewards1);
 
         (uint _positionRewardToken0, uint _positionRewardToken1) = getPendingrewardForPosition(_token0, _token1, _fee);
@@ -876,13 +988,32 @@ contract YfSc{
         if (_rebalance){
             return ;
         }
-        if (_totalCollected0 + _positionRewardToken0 > _totalPendingRewards0){
+        public_totalCollected0 = _totalCollected0;
+        public_totalCollected1 = _totalCollected1;
+
+        public_totalPendingRewards0 = _totalPendingRewards0;
+        public_totalPendingRewards1 = _totalPendingRewards1;
+
+        public_positionRewardToken0 = _positionRewardToken0;
+        public_positionRewardToken1 = _positionRewardToken1;
+
+        return;
+
+        if ( _totalCollected0 + _positionRewardToken0 > 0){
             // (_totalCollected0 - _totalReward0) corresponds to removed liquidity of token 0, idem fotr token 1 
-            token0.transfer(msg.sender, _totalCollected0 + _positionRewardToken0 - _totalPendingRewards0); 
+            token0.transfer(msg.sender, _totalCollected0 + _positionRewardToken0); 
         }
-        if ( _totalCollected1 + _positionRewardToken1 > _totalPendingRewards1){
-            token0.transfer(msg.sender, _totalCollected1 + _positionRewardToken1 - _totalPendingRewards1);
+        if ( _totalCollected1 + _positionRewardToken1 > 0){
+            token0.transfer(msg.sender, _totalCollected1 + _positionRewardToken1 );
         }
+
+        // if (_totalCollected0 + _positionRewardToken0 > _totalPendingRewards0){
+        //     // (_totalCollected0 - _totalReward0) corresponds to removed liquidity of token 0, idem fotr token 1 
+        //     token0.transfer(msg.sender, _totalCollected0 + _positionRewardToken0 - _totalPendingRewards0); 
+        // }
+        // if ( _totalCollected1 + _positionRewardToken1 > _totalPendingRewards1){
+        //     token0.transfer(msg.sender, _totalCollected1 + _positionRewardToken1 - _totalPendingRewards1);
+        // }
         updateClaimVariables(_originalNftId, _positionRewardToken0, _positionRewardToken1);
     }
 
