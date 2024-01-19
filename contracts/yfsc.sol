@@ -126,9 +126,9 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
 
     function updateLiquidityForUser(uint positionNftId, uint128 _liquidity, uint _state)public onlyRole(MINTER_ROLE) {
         liquidityForUserInPoolAtState[positionNftId][_state] = _liquidity;
-        if(statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] < _state){
-            totalStatesForPosition[positionNftId]++;
-        }
+        // if(statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] < _state){
+        //     totalStatesForPosition[positionNftId]++;
+        // }
         statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;   
     }
 
@@ -167,9 +167,9 @@ contract PositionsNFT is ERC721, Pausable, AccessControl {
             //     }
             // }
             
-            for(uint i = _totalStateIdsForPosition ; i > 0; i--){
+            for(uint i = _state ; i > 0; i--){
                 if (statesIdsForPosition[_userPositionNft][i] <= _state){
-                    return liquidityForUserInPoolAtState[_userPositionNft][i];
+                    return liquidityForUserInPoolAtState[_userPositionNft][statesIdsForPosition[_userPositionNft][i]];
                 }
             }
         }
@@ -576,17 +576,23 @@ contract YfSc{
                                       bool _rebalance) internal {
         // liquidityLastDepositTime[10] = 100;
         totalLiquidityAtStateForNft[_originalNftId][statesCounter] = _newLiquidity;
-        if (_rebalance) return;
+        // if (_rebalance) return;
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
         liquidityLastDepositTime[_userNftId] = block.timestamp;
         // uint128 _previousLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
         uint128 _previousLiq = totalLiquidityAtStateForNft[_originalNftId][statesCounter - 1];
-        uint128 _userLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter);
+        uint128 _userLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
+        public_statesCounter = statesCounter;
+        // public_userAddedLiquidity = _previousLiq - _newLiquidity ;// - _newLiquidity;
+        public_previousLiquidity = _previousLiq ;
+        public_newLiquidity = _newLiquidity;
+        public_userPreviousLiquidity = _userLiq ;
+        if (_rebalance) return;
         // public_userAddedLiquidity = _previousLiq ;// - _newLiquidity;
         // public_previousLiquidity = _previousLiq;
         // public_newLiquidity = _newLiquidity;
 
-        public_userPreviousLiquidity = _userLiq ;
+        // public_userPreviousLiquidity = _userLiq ;
         // if (_rebalance) return;
         // liquidityLastDepositTime[10] = 100;
         if(_previousLiq > _newLiquidity){
@@ -599,19 +605,24 @@ contract YfSc{
             _userLiq - (_previousLiq - _newLiquidity), 
             statesCounter);
             // public_userAddedLiquidity = _previousLiq - _newLiquidity ;// - _newLiquidity;
-            // public_previousLiquidity = _userLiq ;
+            // public_previousLiquidity = _previousLiq ;
             // public_newLiquidity = _newLiquidity;
-            
+            // public_userPreviousLiquidity = _userLiq ;
+         
         } else {
             positionsNFT.updateLiquidityForUser(_userNftId, 
             _userLiq + (_newLiquidity - _previousLiq), 
             statesCounter);
             liquidityLastDepositTime[_userNftId] = block.timestamp;
 
-            public_userAddedLiquidity = _newLiquidity - _previousLiq ; // - _newLiquidity;
-            public_previousLiquidity = _previousLiq;
-            public_newLiquidity = _userLiq;
-            public_statesCounter = statesCounter;
+            // public_previousLiquidity = _previousLiq ;
+            // public_newLiquidity = _newLiquidity;
+            // public_userPreviousLiquidity = _userLiq ;
+            
+            // public_userAddedLiquidity = _newLiquidity - _previousLiq ; // - _newLiquidity;
+            // public_previousLiquidity = _previousLiq;
+            // public_newLiquidity = _userLiq;
+            // public_statesCounter = statesCounter;
             // liquidityLastDepositTime[10] = 100;
         }
     }
@@ -876,7 +887,7 @@ contract YfSc{
 
         public_totalPendingRewards0 = _totalPendingRewards0;
         public_totalPendingRewards1 = _totalPendingRewards1;
-        public_statesCounter = statesCounter;
+        // public_statesCounter = statesCounter;
         // return(0,0);
 
         DecreaseLiquidityParams memory decreaseLiquidityParams; 
