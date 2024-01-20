@@ -458,8 +458,21 @@ contract YfSc{
         (,,,,, _tickLower,_tickUpper,,,,,) = nonfungiblePositionManager.positions(poolNftIds[_token1][_token0][_fee] );
     }
 
-    function getTotalLiquidityAtStateForPosition(uint _position, uint _state) public view returns(uint){
-        return totalLiquidityAtStateForNft[_position][_state];
+    function getTotalLiquidityAtStateForPosition(uint _position, uint _state) public view returns(uint128){
+        uint _totalStateIdsForNft = totalStatesForNft[_position];
+        if(_state >= statesIdsForNft[_position][_totalStateIdsForNft]) {
+            // still have work here
+            uint stateId = statesIdsForNft[_position][_totalStateIdsForNft];
+            return totalLiquidityAtStateForNft[_position][stateId];
+        }else{
+            for(uint i = _state ; i > 0; i--){
+                if (statesIdsForNft[_position][i] <= _state){
+                    return totalLiquidityAtStateForNft[_position][statesIdsForNft[_position][i]];
+                }
+            }
+        }
+        return 0;
+        // return totalLiquidityAtStateForNft[_position][_state];
     }
 
     /// @notice external method 
@@ -580,7 +593,8 @@ contract YfSc{
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
         liquidityLastDepositTime[_userNftId] = block.timestamp;
         // uint128 _previousLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
-        uint128 _previousLiq = totalLiquidityAtStateForNft[_originalNftId][statesCounter - 1];
+        uint128 _previousLiq = getTotalLiquidityAtStateForPosition(_originalNftId, statesCounter - 1);
+        // uint128 _previousLiq = totalLiquidityAtStateForNft[_originalNftId][statesCounter - 1];
         uint128 _userLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
         public_statesCounter = statesCounter;
         // public_userAddedLiquidity = _previousLiq - _newLiquidity ;// - _newLiquidity;
@@ -945,7 +959,8 @@ contract YfSc{
         for(uint _state = _lastClaimState; _state <= _maxStateIdForNft ; _state++){
             // Not enough ! what about rewards collected outside of position traced states ?
             uint _correspondingNftState = statesIdsForNft[_originalNftId][_state];
-            uint128 poolLiquidityAtState = totalLiquidityAtStateForNft[_originalNftId][_correspondingNftState];
+            // uint128 poolLiquidityAtState = totalLiquidityAtStateForNft[_originalNftId][_correspondingNftState];
+            uint128 poolLiquidityAtState = getTotalLiquidityAtStateForPosition(_originalNftId, _correspondingNftState);
             if(poolLiquidityAtState > 0){
                 _rewardToken0 += uint256(liquidityAtLastStateForPosition) * 
                 uint256(rewardAtStateForNftToken0[_originalNftId][_correspondingNftState])/uint256(poolLiquidityAtState);               
