@@ -36,7 +36,8 @@
     "@uniswap/v3-core": "^1.0.1",
     "chai": "^4.3.8",
     "ethers": "^6.7.1",
-    "prb-math": "^2.4.3"
+    "prb-math": "^2.4.3",
+    "solady": "^0.0.156"
   },
   "compilerOptions": {
     "module": "NodeNext",

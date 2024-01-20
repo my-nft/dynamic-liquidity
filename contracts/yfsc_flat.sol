@@ -1,6 +1,6 @@
 // Sources flattened with hardhat v2.17.3 https://hardhat.org
 
-// SPDX-License-Identifier: GPL-2.0-or-later AND MIT AND UNLICENSED AND Unlicense
+// SPDX-License-Identifier: GPL-2.0-or-later AND MIT AND UNLICENSED
 
 // File @openzeppelin/contracts/access/IAccessControl.sol@v4.9.3
 
@@ -2405,34 +2405,6 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
 }
 
 
-// File @openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol@v4.9.3
-
-// Original license: SPDX_License_Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.8.0) (token/ERC721/extensions/ERC721Burnable.sol)
-
-pragma solidity ^0.8.0;
-
-
-/**
- * @title ERC721 Burnable Token
- * @dev ERC721 Token that can be burned (destroyed).
- */
-abstract contract ERC721Burnable is Context, ERC721 {
-    /**
-     * @dev Burns `tokenId`. See {ERC721-_burn}.
-     *
-     * Requirements:
-     *
-     * - The caller must own `tokenId` or be an approved operator.
-     */
-    function burn(uint256 tokenId) public virtual {
-        //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
-        _burn(tokenId);
-    }
-}
-
-
 // File @uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol@v1.0.1
 
 // Original license: SPDX_License_Identifier: GPL-2.0-or-later
@@ -2720,6 +2692,38 @@ library FullMath {
 }
 
 
+// File contracts/SafeCast.sol
+
+// Original license: SPDX_License_Identifier: GPL-2.0-or-later
+pragma solidity >=0.5.0;
+
+/// @title Safe casting methods
+/// @notice Contains methods for safely casting between types
+library SafeCast {
+    /// @notice Cast a uint256 to a uint160, revert on overflow
+    /// @param y The uint256 to be downcasted
+    /// @return z The downcasted integer, now type uint160
+    function toUint160(uint256 y) internal pure returns (uint160 z) {
+        require((z = uint160(y)) == y);
+    }
+
+    /// @notice Cast a int256 to a int128, revert on overflow or underflow
+    /// @param y The int256 to be downcasted
+    /// @return z The downcasted integer, now type int128
+    function toInt128(int256 y) internal pure returns (int128 z) {
+        require((z = int128(y)) == y);
+    }
+
+    /// @notice Cast a uint256 to a int256, revert on overflow
+    /// @param y The uint256 to be casted
+    /// @return z The casted integer, now type int256
+    function toInt256(uint256 y) internal pure returns (int256 z) {
+        require(y < 2**255);
+        z = int256(y);
+    }
+}
+
+
 // File contracts/TickMath.sol
 
 // Original license: SPDX_License_Identifier: GPL-2.0-or-later
@@ -2938,1157 +2942,22 @@ library TickMath {
 }
 
 
-// File prb-math/contracts/PRBMath.sol@v2.4.3
+// File contracts/UnsafeMath.sol
 
-// Original license: SPDX_License_Identifier: Unlicense
-pragma solidity >=0.8.4;
+// Original license: SPDX_License_Identifier: GPL-2.0-or-later
+pragma solidity >=0.5.0;
 
-/// @notice Emitted when the result overflows uint256.
-error PRBMath__MulDivFixedPointOverflow(uint256 prod1);
-
-/// @notice Emitted when the result overflows uint256.
-error PRBMath__MulDivOverflow(uint256 prod1, uint256 denominator);
-
-/// @notice Emitted when one of the inputs is type(int256).min.
-error PRBMath__MulDivSignedInputTooSmall();
-
-/// @notice Emitted when the intermediary absolute result overflows int256.
-error PRBMath__MulDivSignedOverflow(uint256 rAbs);
-
-/// @notice Emitted when the input is MIN_SD59x18.
-error PRBMathSD59x18__AbsInputTooSmall();
-
-/// @notice Emitted when ceiling a number overflows SD59x18.
-error PRBMathSD59x18__CeilOverflow(int256 x);
-
-/// @notice Emitted when one of the inputs is MIN_SD59x18.
-error PRBMathSD59x18__DivInputTooSmall();
-
-/// @notice Emitted when one of the intermediary unsigned results overflows SD59x18.
-error PRBMathSD59x18__DivOverflow(uint256 rAbs);
-
-/// @notice Emitted when the input is greater than 133.084258667509499441.
-error PRBMathSD59x18__ExpInputTooBig(int256 x);
-
-/// @notice Emitted when the input is greater than 192.
-error PRBMathSD59x18__Exp2InputTooBig(int256 x);
-
-/// @notice Emitted when flooring a number underflows SD59x18.
-error PRBMathSD59x18__FloorUnderflow(int256 x);
-
-/// @notice Emitted when converting a basic integer to the fixed-point format overflows SD59x18.
-error PRBMathSD59x18__FromIntOverflow(int256 x);
-
-/// @notice Emitted when converting a basic integer to the fixed-point format underflows SD59x18.
-error PRBMathSD59x18__FromIntUnderflow(int256 x);
-
-/// @notice Emitted when the product of the inputs is negative.
-error PRBMathSD59x18__GmNegativeProduct(int256 x, int256 y);
-
-/// @notice Emitted when multiplying the inputs overflows SD59x18.
-error PRBMathSD59x18__GmOverflow(int256 x, int256 y);
-
-/// @notice Emitted when the input is less than or equal to zero.
-error PRBMathSD59x18__LogInputTooSmall(int256 x);
-
-/// @notice Emitted when one of the inputs is MIN_SD59x18.
-error PRBMathSD59x18__MulInputTooSmall();
-
-/// @notice Emitted when the intermediary absolute result overflows SD59x18.
-error PRBMathSD59x18__MulOverflow(uint256 rAbs);
-
-/// @notice Emitted when the intermediary absolute result overflows SD59x18.
-error PRBMathSD59x18__PowuOverflow(uint256 rAbs);
-
-/// @notice Emitted when the input is negative.
-error PRBMathSD59x18__SqrtNegativeInput(int256 x);
-
-/// @notice Emitted when the calculating the square root overflows SD59x18.
-error PRBMathSD59x18__SqrtOverflow(int256 x);
-
-/// @notice Emitted when addition overflows UD60x18.
-error PRBMathUD60x18__AddOverflow(uint256 x, uint256 y);
-
-/// @notice Emitted when ceiling a number overflows UD60x18.
-error PRBMathUD60x18__CeilOverflow(uint256 x);
-
-/// @notice Emitted when the input is greater than 133.084258667509499441.
-error PRBMathUD60x18__ExpInputTooBig(uint256 x);
-
-/// @notice Emitted when the input is greater than 192.
-error PRBMathUD60x18__Exp2InputTooBig(uint256 x);
-
-/// @notice Emitted when converting a basic integer to the fixed-point format format overflows UD60x18.
-error PRBMathUD60x18__FromUintOverflow(uint256 x);
-
-/// @notice Emitted when multiplying the inputs overflows UD60x18.
-error PRBMathUD60x18__GmOverflow(uint256 x, uint256 y);
-
-/// @notice Emitted when the input is less than 1.
-error PRBMathUD60x18__LogInputTooSmall(uint256 x);
-
-/// @notice Emitted when the calculating the square root overflows UD60x18.
-error PRBMathUD60x18__SqrtOverflow(uint256 x);
-
-/// @notice Emitted when subtraction underflows UD60x18.
-error PRBMathUD60x18__SubUnderflow(uint256 x, uint256 y);
-
-/// @dev Common mathematical functions used in both PRBMathSD59x18 and PRBMathUD60x18. Note that this shared library
-/// does not always assume the signed 59.18-decimal fixed-point or the unsigned 60.18-decimal fixed-point
-/// representation. When it does not, it is explicitly mentioned in the NatSpec documentation.
-library PRBMath {
-    /// STRUCTS ///
-
-    struct SD59x18 {
-        int256 value;
-    }
-
-    struct UD60x18 {
-        uint256 value;
-    }
-
-    /// STORAGE ///
-
-    /// @dev How many trailing decimals can be represented.
-    uint256 internal constant SCALE = 1e18;
-
-    /// @dev Largest power of two divisor of SCALE.
-    uint256 internal constant SCALE_LPOTD = 262144;
-
-    /// @dev SCALE inverted mod 2^256.
-    uint256 internal constant SCALE_INVERSE =
-        78156646155174841979727994598816262306175212592076161876661_508869554232690281;
-
-    /// FUNCTIONS ///
-
-    /// @notice Calculates the binary exponent of x using the binary fraction method.
-    /// @dev Has to use 192.64-bit fixed-point numbers.
-    /// See https://ethereum.stackexchange.com/a/96594/24693.
-    /// @param x The exponent as an unsigned 192.64-bit fixed-point number.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point number.
-    function exp2(uint256 x) internal pure returns (uint256 result) {
-        unchecked {
-            // Start from 0.5 in the 192.64-bit fixed-point format.
-            result = 0x800000000000000000000000000000000000000000000000;
-
-            // Multiply the result by root(2, 2^-i) when the bit at position i is 1. None of the intermediary results overflows
-            // because the initial result is 2^191 and all magic factors are less than 2^65.
-            if (x & 0x8000000000000000 > 0) {
-                result = (result * 0x16A09E667F3BCC909) >> 64;
-            }
-            if (x & 0x4000000000000000 > 0) {
-                result = (result * 0x1306FE0A31B7152DF) >> 64;
-            }
-            if (x & 0x2000000000000000 > 0) {
-                result = (result * 0x1172B83C7D517ADCE) >> 64;
-            }
-            if (x & 0x1000000000000000 > 0) {
-                result = (result * 0x10B5586CF9890F62A) >> 64;
-            }
-            if (x & 0x800000000000000 > 0) {
-                result = (result * 0x1059B0D31585743AE) >> 64;
-            }
-            if (x & 0x400000000000000 > 0) {
-                result = (result * 0x102C9A3E778060EE7) >> 64;
-            }
-            if (x & 0x200000000000000 > 0) {
-                result = (result * 0x10163DA9FB33356D8) >> 64;
-            }
-            if (x & 0x100000000000000 > 0) {
-                result = (result * 0x100B1AFA5ABCBED61) >> 64;
-            }
-            if (x & 0x80000000000000 > 0) {
-                result = (result * 0x10058C86DA1C09EA2) >> 64;
-            }
-            if (x & 0x40000000000000 > 0) {
-                result = (result * 0x1002C605E2E8CEC50) >> 64;
-            }
-            if (x & 0x20000000000000 > 0) {
-                result = (result * 0x100162F3904051FA1) >> 64;
-            }
-            if (x & 0x10000000000000 > 0) {
-                result = (result * 0x1000B175EFFDC76BA) >> 64;
-            }
-            if (x & 0x8000000000000 > 0) {
-                result = (result * 0x100058BA01FB9F96D) >> 64;
-            }
-            if (x & 0x4000000000000 > 0) {
-                result = (result * 0x10002C5CC37DA9492) >> 64;
-            }
-            if (x & 0x2000000000000 > 0) {
-                result = (result * 0x1000162E525EE0547) >> 64;
-            }
-            if (x & 0x1000000000000 > 0) {
-                result = (result * 0x10000B17255775C04) >> 64;
-            }
-            if (x & 0x800000000000 > 0) {
-                result = (result * 0x1000058B91B5BC9AE) >> 64;
-            }
-            if (x & 0x400000000000 > 0) {
-                result = (result * 0x100002C5C89D5EC6D) >> 64;
-            }
-            if (x & 0x200000000000 > 0) {
-                result = (result * 0x10000162E43F4F831) >> 64;
-            }
-            if (x & 0x100000000000 > 0) {
-                result = (result * 0x100000B1721BCFC9A) >> 64;
-            }
-            if (x & 0x80000000000 > 0) {
-                result = (result * 0x10000058B90CF1E6E) >> 64;
-            }
-            if (x & 0x40000000000 > 0) {
-                result = (result * 0x1000002C5C863B73F) >> 64;
-            }
-            if (x & 0x20000000000 > 0) {
-                result = (result * 0x100000162E430E5A2) >> 64;
-            }
-            if (x & 0x10000000000 > 0) {
-                result = (result * 0x1000000B172183551) >> 64;
-            }
-            if (x & 0x8000000000 > 0) {
-                result = (result * 0x100000058B90C0B49) >> 64;
-            }
-            if (x & 0x4000000000 > 0) {
-                result = (result * 0x10000002C5C8601CC) >> 64;
-            }
-            if (x & 0x2000000000 > 0) {
-                result = (result * 0x1000000162E42FFF0) >> 64;
-            }
-            if (x & 0x1000000000 > 0) {
-                result = (result * 0x10000000B17217FBB) >> 64;
-            }
-            if (x & 0x800000000 > 0) {
-                result = (result * 0x1000000058B90BFCE) >> 64;
-            }
-            if (x & 0x400000000 > 0) {
-                result = (result * 0x100000002C5C85FE3) >> 64;
-            }
-            if (x & 0x200000000 > 0) {
-                result = (result * 0x10000000162E42FF1) >> 64;
-            }
-            if (x & 0x100000000 > 0) {
-                result = (result * 0x100000000B17217F8) >> 64;
-            }
-            if (x & 0x80000000 > 0) {
-                result = (result * 0x10000000058B90BFC) >> 64;
-            }
-            if (x & 0x40000000 > 0) {
-                result = (result * 0x1000000002C5C85FE) >> 64;
-            }
-            if (x & 0x20000000 > 0) {
-                result = (result * 0x100000000162E42FF) >> 64;
-            }
-            if (x & 0x10000000 > 0) {
-                result = (result * 0x1000000000B17217F) >> 64;
-            }
-            if (x & 0x8000000 > 0) {
-                result = (result * 0x100000000058B90C0) >> 64;
-            }
-            if (x & 0x4000000 > 0) {
-                result = (result * 0x10000000002C5C860) >> 64;
-            }
-            if (x & 0x2000000 > 0) {
-                result = (result * 0x1000000000162E430) >> 64;
-            }
-            if (x & 0x1000000 > 0) {
-                result = (result * 0x10000000000B17218) >> 64;
-            }
-            if (x & 0x800000 > 0) {
-                result = (result * 0x1000000000058B90C) >> 64;
-            }
-            if (x & 0x400000 > 0) {
-                result = (result * 0x100000000002C5C86) >> 64;
-            }
-            if (x & 0x200000 > 0) {
-                result = (result * 0x10000000000162E43) >> 64;
-            }
-            if (x & 0x100000 > 0) {
-                result = (result * 0x100000000000B1721) >> 64;
-            }
-            if (x & 0x80000 > 0) {
-                result = (result * 0x10000000000058B91) >> 64;
-            }
-            if (x & 0x40000 > 0) {
-                result = (result * 0x1000000000002C5C8) >> 64;
-            }
-            if (x & 0x20000 > 0) {
-                result = (result * 0x100000000000162E4) >> 64;
-            }
-            if (x & 0x10000 > 0) {
-                result = (result * 0x1000000000000B172) >> 64;
-            }
-            if (x & 0x8000 > 0) {
-                result = (result * 0x100000000000058B9) >> 64;
-            }
-            if (x & 0x4000 > 0) {
-                result = (result * 0x10000000000002C5D) >> 64;
-            }
-            if (x & 0x2000 > 0) {
-                result = (result * 0x1000000000000162E) >> 64;
-            }
-            if (x & 0x1000 > 0) {
-                result = (result * 0x10000000000000B17) >> 64;
-            }
-            if (x & 0x800 > 0) {
-                result = (result * 0x1000000000000058C) >> 64;
-            }
-            if (x & 0x400 > 0) {
-                result = (result * 0x100000000000002C6) >> 64;
-            }
-            if (x & 0x200 > 0) {
-                result = (result * 0x10000000000000163) >> 64;
-            }
-            if (x & 0x100 > 0) {
-                result = (result * 0x100000000000000B1) >> 64;
-            }
-            if (x & 0x80 > 0) {
-                result = (result * 0x10000000000000059) >> 64;
-            }
-            if (x & 0x40 > 0) {
-                result = (result * 0x1000000000000002C) >> 64;
-            }
-            if (x & 0x20 > 0) {
-                result = (result * 0x10000000000000016) >> 64;
-            }
-            if (x & 0x10 > 0) {
-                result = (result * 0x1000000000000000B) >> 64;
-            }
-            if (x & 0x8 > 0) {
-                result = (result * 0x10000000000000006) >> 64;
-            }
-            if (x & 0x4 > 0) {
-                result = (result * 0x10000000000000003) >> 64;
-            }
-            if (x & 0x2 > 0) {
-                result = (result * 0x10000000000000001) >> 64;
-            }
-            if (x & 0x1 > 0) {
-                result = (result * 0x10000000000000001) >> 64;
-            }
-
-            // We're doing two things at the same time:
-            //
-            //   1. Multiply the result by 2^n + 1, where "2^n" is the integer part and the one is added to account for
-            //      the fact that we initially set the result to 0.5. This is accomplished by subtracting from 191
-            //      rather than 192.
-            //   2. Convert the result to the unsigned 60.18-decimal fixed-point format.
-            //
-            // This works because 2^(191-ip) = 2^ip / 2^191, where "ip" is the integer part "2^n".
-            result *= SCALE;
-            result >>= (191 - (x >> 64));
-        }
-    }
-
-    /// @notice Finds the zero-based index of the first one in the binary representation of x.
-    /// @dev See the note on msb in the "Find First Set" Wikipedia article https://en.wikipedia.org/wiki/Find_first_set
-    /// @param x The uint256 number for which to find the index of the most significant bit.
-    /// @return msb The index of the most significant bit as an uint256.
-    function mostSignificantBit(uint256 x) internal pure returns (uint256 msb) {
-        if (x >= 2**128) {
-            x >>= 128;
-            msb += 128;
-        }
-        if (x >= 2**64) {
-            x >>= 64;
-            msb += 64;
-        }
-        if (x >= 2**32) {
-            x >>= 32;
-            msb += 32;
-        }
-        if (x >= 2**16) {
-            x >>= 16;
-            msb += 16;
-        }
-        if (x >= 2**8) {
-            x >>= 8;
-            msb += 8;
-        }
-        if (x >= 2**4) {
-            x >>= 4;
-            msb += 4;
-        }
-        if (x >= 2**2) {
-            x >>= 2;
-            msb += 2;
-        }
-        if (x >= 2**1) {
-            // No need to shift x any more.
-            msb += 1;
-        }
-    }
-
-    /// @notice Calculates floor(x*y÷denominator) with full precision.
-    ///
-    /// @dev Credit to Remco Bloemen under MIT license https://xn--2-umb.com/21/muldiv.
-    ///
-    /// Requirements:
-    /// - The denominator cannot be zero.
-    /// - The result must fit within uint256.
-    ///
-    /// Caveats:
-    /// - This function does not work with fixed-point numbers.
-    ///
-    /// @param x The multiplicand as an uint256.
-    /// @param y The multiplier as an uint256.
-    /// @param denominator The divisor as an uint256.
-    /// @return result The result as an uint256.
-    function mulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 denominator
-    ) internal pure returns (uint256 result) {
-        // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
-        // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
-        // variables such that product = prod1 * 2^256 + prod0.
-        uint256 prod0; // Least significant 256 bits of the product
-        uint256 prod1; // Most significant 256 bits of the product
+/// @title Math functions that do not check inputs or outputs
+/// @notice Contains methods that perform common math functions but do not do any overflow or underflow checks
+library UnsafeMath {
+    /// @notice Returns ceil(x / y)
+    /// @dev division by 0 has unspecified behavior, and must be checked externally
+    /// @param x The dividend
+    /// @param y The divisor
+    /// @return z The quotient, ceil(x / y)
+    function divRoundingUp(uint256 x, uint256 y) internal pure returns (uint256 z) {
         assembly {
-            let mm := mulmod(x, y, not(0))
-            prod0 := mul(x, y)
-            prod1 := sub(sub(mm, prod0), lt(mm, prod0))
-        }
-
-        // Handle non-overflow cases, 256 by 256 division.
-        if (prod1 == 0) {
-            unchecked {
-                result = prod0 / denominator;
-            }
-            return result;
-        }
-
-        // Make sure the result is less than 2^256. Also prevents denominator == 0.
-        if (prod1 >= denominator) {
-            revert PRBMath__MulDivOverflow(prod1, denominator);
-        }
-
-        ///////////////////////////////////////////////
-        // 512 by 256 division.
-        ///////////////////////////////////////////////
-
-        // Make division exact by subtracting the remainder from [prod1 prod0].
-        uint256 remainder;
-        assembly {
-            // Compute remainder using mulmod.
-            remainder := mulmod(x, y, denominator)
-
-            // Subtract 256 bit number from 512 bit number.
-            prod1 := sub(prod1, gt(remainder, prod0))
-            prod0 := sub(prod0, remainder)
-        }
-
-        // Factor powers of two out of denominator and compute largest power of two divisor of denominator. Always >= 1.
-        // See https://cs.stackexchange.com/q/138556/92363.
-        unchecked {
-            // Does not overflow because the denominator cannot be zero at this stage in the function.
-            uint256 lpotdod = denominator & (~denominator + 1);
-            assembly {
-                // Divide denominator by lpotdod.
-                denominator := div(denominator, lpotdod)
-
-                // Divide [prod1 prod0] by lpotdod.
-                prod0 := div(prod0, lpotdod)
-
-                // Flip lpotdod such that it is 2^256 / lpotdod. If lpotdod is zero, then it becomes one.
-                lpotdod := add(div(sub(0, lpotdod), lpotdod), 1)
-            }
-
-            // Shift in bits from prod1 into prod0.
-            prod0 |= prod1 * lpotdod;
-
-            // Invert denominator mod 2^256. Now that denominator is an odd number, it has an inverse modulo 2^256 such
-            // that denominator * inv = 1 mod 2^256. Compute the inverse by starting with a seed that is correct for
-            // four bits. That is, denominator * inv = 1 mod 2^4.
-            uint256 inverse = (3 * denominator) ^ 2;
-
-            // Use the Newton-Raphson iteration to improve the precision. Thanks to Hensel's lifting lemma, this also works
-            // in modular arithmetic, doubling the correct bits in each step.
-            inverse *= 2 - denominator * inverse; // inverse mod 2^8
-            inverse *= 2 - denominator * inverse; // inverse mod 2^16
-            inverse *= 2 - denominator * inverse; // inverse mod 2^32
-            inverse *= 2 - denominator * inverse; // inverse mod 2^64
-            inverse *= 2 - denominator * inverse; // inverse mod 2^128
-            inverse *= 2 - denominator * inverse; // inverse mod 2^256
-
-            // Because the division is now exact we can divide by multiplying with the modular inverse of denominator.
-            // This will give us the correct result modulo 2^256. Since the preconditions guarantee that the outcome is
-            // less than 2^256, this is the final result. We don't need to compute the high bits of the result and prod1
-            // is no longer required.
-            result = prod0 * inverse;
-            return result;
-        }
-    }
-
-    /// @notice Calculates floor(x*y÷1e18) with full precision.
-    ///
-    /// @dev Variant of "mulDiv" with constant folding, i.e. in which the denominator is always 1e18. Before returning the
-    /// final result, we add 1 if (x * y) % SCALE >= HALF_SCALE. Without this, 6.6e-19 would be truncated to 0 instead of
-    /// being rounded to 1e-18.  See "Listing 6" and text above it at https://accu.org/index.php/journals/1717.
-    ///
-    /// Requirements:
-    /// - The result must fit within uint256.
-    ///
-    /// Caveats:
-    /// - The body is purposely left uncommented; see the NatSpec comments in "PRBMath.mulDiv" to understand how this works.
-    /// - It is assumed that the result can never be type(uint256).max when x and y solve the following two equations:
-    ///     1. x * y = type(uint256).max * SCALE
-    ///     2. (x * y) % SCALE >= SCALE / 2
-    ///
-    /// @param x The multiplicand as an unsigned 60.18-decimal fixed-point number.
-    /// @param y The multiplier as an unsigned 60.18-decimal fixed-point number.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point number.
-    function mulDivFixedPoint(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        uint256 prod0;
-        uint256 prod1;
-        assembly {
-            let mm := mulmod(x, y, not(0))
-            prod0 := mul(x, y)
-            prod1 := sub(sub(mm, prod0), lt(mm, prod0))
-        }
-
-        if (prod1 >= SCALE) {
-            revert PRBMath__MulDivFixedPointOverflow(prod1);
-        }
-
-        uint256 remainder;
-        uint256 roundUpUnit;
-        assembly {
-            remainder := mulmod(x, y, SCALE)
-            roundUpUnit := gt(remainder, 499999999999999999)
-        }
-
-        if (prod1 == 0) {
-            unchecked {
-                result = (prod0 / SCALE) + roundUpUnit;
-                return result;
-            }
-        }
-
-        assembly {
-            result := add(
-                mul(
-                    or(
-                        div(sub(prod0, remainder), SCALE_LPOTD),
-                        mul(sub(prod1, gt(remainder, prod0)), add(div(sub(0, SCALE_LPOTD), SCALE_LPOTD), 1))
-                    ),
-                    SCALE_INVERSE
-                ),
-                roundUpUnit
-            )
-        }
-    }
-
-    /// @notice Calculates floor(x*y÷denominator) with full precision.
-    ///
-    /// @dev An extension of "mulDiv" for signed numbers. Works by computing the signs and the absolute values separately.
-    ///
-    /// Requirements:
-    /// - None of the inputs can be type(int256).min.
-    /// - The result must fit within int256.
-    ///
-    /// @param x The multiplicand as an int256.
-    /// @param y The multiplier as an int256.
-    /// @param denominator The divisor as an int256.
-    /// @return result The result as an int256.
-    function mulDivSigned(
-        int256 x,
-        int256 y,
-        int256 denominator
-    ) internal pure returns (int256 result) {
-        if (x == type(int256).min || y == type(int256).min || denominator == type(int256).min) {
-            revert PRBMath__MulDivSignedInputTooSmall();
-        }
-
-        // Get hold of the absolute values of x, y and the denominator.
-        uint256 ax;
-        uint256 ay;
-        uint256 ad;
-        unchecked {
-            ax = x < 0 ? uint256(-x) : uint256(x);
-            ay = y < 0 ? uint256(-y) : uint256(y);
-            ad = denominator < 0 ? uint256(-denominator) : uint256(denominator);
-        }
-
-        // Compute the absolute value of (x*y)÷denominator. The result must fit within int256.
-        uint256 rAbs = mulDiv(ax, ay, ad);
-        if (rAbs > uint256(type(int256).max)) {
-            revert PRBMath__MulDivSignedOverflow(rAbs);
-        }
-
-        // Get the signs of x, y and the denominator.
-        uint256 sx;
-        uint256 sy;
-        uint256 sd;
-        assembly {
-            sx := sgt(x, sub(0, 1))
-            sy := sgt(y, sub(0, 1))
-            sd := sgt(denominator, sub(0, 1))
-        }
-
-        // XOR over sx, sy and sd. This is checking whether there are one or three negative signs in the inputs.
-        // If yes, the result should be negative.
-        result = sx ^ sy ^ sd == 0 ? -int256(rAbs) : int256(rAbs);
-    }
-
-    /// @notice Calculates the square root of x, rounding down.
-    /// @dev Uses the Babylonian method https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method.
-    ///
-    /// Caveats:
-    /// - This function does not work with fixed-point numbers.
-    ///
-    /// @param x The uint256 number for which to calculate the square root.
-    /// @return result The result as an uint256.
-    function sqrt(uint256 x) internal pure returns (uint256 result) {
-        if (x == 0) {
-            return 0;
-        }
-
-        // Set the initial guess to the least power of two that is greater than or equal to sqrt(x).
-        uint256 xAux = uint256(x);
-        result = 1;
-        if (xAux >= 0x100000000000000000000000000000000) {
-            xAux >>= 128;
-            result <<= 64;
-        }
-        if (xAux >= 0x10000000000000000) {
-            xAux >>= 64;
-            result <<= 32;
-        }
-        if (xAux >= 0x100000000) {
-            xAux >>= 32;
-            result <<= 16;
-        }
-        if (xAux >= 0x10000) {
-            xAux >>= 16;
-            result <<= 8;
-        }
-        if (xAux >= 0x100) {
-            xAux >>= 8;
-            result <<= 4;
-        }
-        if (xAux >= 0x10) {
-            xAux >>= 4;
-            result <<= 2;
-        }
-        if (xAux >= 0x8) {
-            result <<= 1;
-        }
-
-        // The operations can never overflow because the result is max 2^127 when it enters this block.
-        unchecked {
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1; // Seven iterations should be enough
-            uint256 roundedDownResult = x / result;
-            return result >= roundedDownResult ? roundedDownResult : result;
-        }
-    }
-}
-
-
-// File prb-math/contracts/PRBMathUD60x18.sol@v2.4.3
-
-// Original license: SPDX_License_Identifier: Unlicense
-pragma solidity >=0.8.4;
-
-/// @title PRBMathUD60x18
-/// @author Paul Razvan Berg
-/// @notice Smart contract library for advanced fixed-point math that works with uint256 numbers considered to have 18
-/// trailing decimals. We call this number representation unsigned 60.18-decimal fixed-point, since there can be up to 60
-/// digits in the integer part and up to 18 decimals in the fractional part. The numbers are bound by the minimum and the
-/// maximum values permitted by the Solidity type uint256.
-library PRBMathUD60x18 {
-    /// @dev Half the SCALE number.
-    uint256 internal constant HALF_SCALE = 5e17;
-
-    /// @dev log2(e) as an unsigned 60.18-decimal fixed-point number.
-    uint256 internal constant LOG2_E = 1_442695040888963407;
-
-    /// @dev The maximum value an unsigned 60.18-decimal fixed-point number can have.
-    uint256 internal constant MAX_UD60x18 =
-        115792089237316195423570985008687907853269984665640564039457_584007913129639935;
-
-    /// @dev The maximum whole value an unsigned 60.18-decimal fixed-point number can have.
-    uint256 internal constant MAX_WHOLE_UD60x18 =
-        115792089237316195423570985008687907853269984665640564039457_000000000000000000;
-
-    /// @dev How many trailing decimals can be represented.
-    uint256 internal constant SCALE = 1e18;
-
-    /// @notice Calculates the arithmetic average of x and y, rounding down.
-    /// @param x The first operand as an unsigned 60.18-decimal fixed-point number.
-    /// @param y The second operand as an unsigned 60.18-decimal fixed-point number.
-    /// @return result The arithmetic average as an unsigned 60.18-decimal fixed-point number.
-    function avg(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        // The operations can never overflow.
-        unchecked {
-            // The last operand checks if both x and y are odd and if that is the case, we add 1 to the result. We need
-            // to do this because if both numbers are odd, the 0.5 remainder gets truncated twice.
-            result = (x >> 1) + (y >> 1) + (x & y & 1);
-        }
-    }
-
-    /// @notice Yields the least unsigned 60.18 decimal fixed-point number greater than or equal to x.
-    ///
-    /// @dev Optimized for fractional value inputs, because for every whole value there are (1e18 - 1) fractional counterparts.
-    /// See https://en.wikipedia.org/wiki/Floor_and_ceiling_functions.
-    ///
-    /// Requirements:
-    /// - x must be less than or equal to MAX_WHOLE_UD60x18.
-    ///
-    /// @param x The unsigned 60.18-decimal fixed-point number to ceil.
-    /// @param result The least integer greater than or equal to x, as an unsigned 60.18-decimal fixed-point number.
-    function ceil(uint256 x) internal pure returns (uint256 result) {
-        if (x > MAX_WHOLE_UD60x18) {
-            revert PRBMathUD60x18__CeilOverflow(x);
-        }
-        assembly {
-            // Equivalent to "x % SCALE" but faster.
-            let remainder := mod(x, SCALE)
-
-            // Equivalent to "SCALE - remainder" but faster.
-            let delta := sub(SCALE, remainder)
-
-            // Equivalent to "x + delta * (remainder > 0 ? 1 : 0)" but faster.
-            result := add(x, mul(delta, gt(remainder, 0)))
-        }
-    }
-
-    /// @notice Divides two unsigned 60.18-decimal fixed-point numbers, returning a new unsigned 60.18-decimal fixed-point number.
-    ///
-    /// @dev Uses mulDiv to enable overflow-safe multiplication and division.
-    ///
-    /// Requirements:
-    /// - The denominator cannot be zero.
-    ///
-    /// @param x The numerator as an unsigned 60.18-decimal fixed-point number.
-    /// @param y The denominator as an unsigned 60.18-decimal fixed-point number.
-    /// @param result The quotient as an unsigned 60.18-decimal fixed-point number.
-    function div(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        result = PRBMath.mulDiv(x, SCALE, y);
-    }
-
-    /// @notice Returns Euler's number as an unsigned 60.18-decimal fixed-point number.
-    /// @dev See https://en.wikipedia.org/wiki/E_(mathematical_constant).
-    function e() internal pure returns (uint256 result) {
-        result = 2_718281828459045235;
-    }
-
-    /// @notice Calculates the natural exponent of x.
-    ///
-    /// @dev Based on the insight that e^x = 2^(x * log2(e)).
-    ///
-    /// Requirements:
-    /// - All from "log2".
-    /// - x must be less than 133.084258667509499441.
-    ///
-    /// @param x The exponent as an unsigned 60.18-decimal fixed-point number.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point number.
-    function exp(uint256 x) internal pure returns (uint256 result) {
-        // Without this check, the value passed to "exp2" would be greater than 192.
-        if (x >= 133_084258667509499441) {
-            revert PRBMathUD60x18__ExpInputTooBig(x);
-        }
-
-        // Do the fixed-point multiplication inline to save gas.
-        unchecked {
-            uint256 doubleScaleProduct = x * LOG2_E;
-            result = exp2((doubleScaleProduct + HALF_SCALE) / SCALE);
-        }
-    }
-
-    /// @notice Calculates the binary exponent of x using the binary fraction method.
-    ///
-    /// @dev See https://ethereum.stackexchange.com/q/79903/24693.
-    ///
-    /// Requirements:
-    /// - x must be 192 or less.
-    /// - The result must fit within MAX_UD60x18.
-    ///
-    /// @param x The exponent as an unsigned 60.18-decimal fixed-point number.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point number.
-    function exp2(uint256 x) internal pure returns (uint256 result) {
-        // 2^192 doesn't fit within the 192.64-bit format used internally in this function.
-        if (x >= 192e18) {
-            revert PRBMathUD60x18__Exp2InputTooBig(x);
-        }
-
-        unchecked {
-            // Convert x to the 192.64-bit fixed-point format.
-            uint256 x192x64 = (x << 64) / SCALE;
-
-            // Pass x to the PRBMath.exp2 function, which uses the 192.64-bit fixed-point number representation.
-            result = PRBMath.exp2(x192x64);
-        }
-    }
-
-    /// @notice Yields the greatest unsigned 60.18 decimal fixed-point number less than or equal to x.
-    /// @dev Optimized for fractional value inputs, because for every whole value there are (1e18 - 1) fractional counterparts.
-    /// See https://en.wikipedia.org/wiki/Floor_and_ceiling_functions.
-    /// @param x The unsigned 60.18-decimal fixed-point number to floor.
-    /// @param result The greatest integer less than or equal to x, as an unsigned 60.18-decimal fixed-point number.
-    function floor(uint256 x) internal pure returns (uint256 result) {
-        assembly {
-            // Equivalent to "x % SCALE" but faster.
-            let remainder := mod(x, SCALE)
-
-            // Equivalent to "x - remainder * (remainder > 0 ? 1 : 0)" but faster.
-            result := sub(x, mul(remainder, gt(remainder, 0)))
-        }
-    }
-
-    /// @notice Yields the excess beyond the floor of x.
-    /// @dev Based on the odd function definition https://en.wikipedia.org/wiki/Fractional_part.
-    /// @param x The unsigned 60.18-decimal fixed-point number to get the fractional part of.
-    /// @param result The fractional part of x as an unsigned 60.18-decimal fixed-point number.
-    function frac(uint256 x) internal pure returns (uint256 result) {
-        assembly {
-            result := mod(x, SCALE)
-        }
-    }
-
-    /// @notice Converts a number from basic integer form to unsigned 60.18-decimal fixed-point representation.
-    ///
-    /// @dev Requirements:
-    /// - x must be less than or equal to MAX_UD60x18 divided by SCALE.
-    ///
-    /// @param x The basic integer to convert.
-    /// @param result The same number in unsigned 60.18-decimal fixed-point representation.
-    function fromUint(uint256 x) internal pure returns (uint256 result) {
-        unchecked {
-            if (x > MAX_UD60x18 / SCALE) {
-                revert PRBMathUD60x18__FromUintOverflow(x);
-            }
-            result = x * SCALE;
-        }
-    }
-
-    /// @notice Calculates geometric mean of x and y, i.e. sqrt(x * y), rounding down.
-    ///
-    /// @dev Requirements:
-    /// - x * y must fit within MAX_UD60x18, lest it overflows.
-    ///
-    /// @param x The first operand as an unsigned 60.18-decimal fixed-point number.
-    /// @param y The second operand as an unsigned 60.18-decimal fixed-point number.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point number.
-    function gm(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        if (x == 0) {
-            return 0;
-        }
-
-        unchecked {
-            // Checking for overflow this way is faster than letting Solidity do it.
-            uint256 xy = x * y;
-            if (xy / x != y) {
-                revert PRBMathUD60x18__GmOverflow(x, y);
-            }
-
-            // We don't need to multiply by the SCALE here because the x*y product had already picked up a factor of SCALE
-            // during multiplication. See the comments within the "sqrt" function.
-            result = PRBMath.sqrt(xy);
-        }
-    }
-
-    /// @notice Calculates 1 / x, rounding toward zero.
-    ///
-    /// @dev Requirements:
-    /// - x cannot be zero.
-    ///
-    /// @param x The unsigned 60.18-decimal fixed-point number for which to calculate the inverse.
-    /// @return result The inverse as an unsigned 60.18-decimal fixed-point number.
-    function inv(uint256 x) internal pure returns (uint256 result) {
-        unchecked {
-            // 1e36 is SCALE * SCALE.
-            result = 1e36 / x;
-        }
-    }
-
-    /// @notice Calculates the natural logarithm of x.
-    ///
-    /// @dev Based on the insight that ln(x) = log2(x) / log2(e).
-    ///
-    /// Requirements:
-    /// - All from "log2".
-    ///
-    /// Caveats:
-    /// - All from "log2".
-    /// - This doesn't return exactly 1 for 2.718281828459045235, for that we would need more fine-grained precision.
-    ///
-    /// @param x The unsigned 60.18-decimal fixed-point number for which to calculate the natural logarithm.
-    /// @return result The natural logarithm as an unsigned 60.18-decimal fixed-point number.
-    function ln(uint256 x) internal pure returns (uint256 result) {
-        // Do the fixed-point multiplication inline to save gas. This is overflow-safe because the maximum value that log2(x)
-        // can return is 196205294292027477728.
-        unchecked {
-            result = (log2(x) * SCALE) / LOG2_E;
-        }
-    }
-
-    /// @notice Calculates the common logarithm of x.
-    ///
-    /// @dev First checks if x is an exact power of ten and it stops if yes. If it's not, calculates the common
-    /// logarithm based on the insight that log10(x) = log2(x) / log2(10).
-    ///
-    /// Requirements:
-    /// - All from "log2".
-    ///
-    /// Caveats:
-    /// - All from "log2".
-    ///
-    /// @param x The unsigned 60.18-decimal fixed-point number for which to calculate the common logarithm.
-    /// @return result The common logarithm as an unsigned 60.18-decimal fixed-point number.
-    function log10(uint256 x) internal pure returns (uint256 result) {
-        if (x < SCALE) {
-            revert PRBMathUD60x18__LogInputTooSmall(x);
-        }
-
-        // Note that the "mul" in this block is the assembly multiplication operation, not the "mul" function defined
-        // in this contract.
-        // prettier-ignore
-        assembly {
-            switch x
-            case 1 { result := mul(SCALE, sub(0, 18)) }
-            case 10 { result := mul(SCALE, sub(1, 18)) }
-            case 100 { result := mul(SCALE, sub(2, 18)) }
-            case 1000 { result := mul(SCALE, sub(3, 18)) }
-            case 10000 { result := mul(SCALE, sub(4, 18)) }
-            case 100000 { result := mul(SCALE, sub(5, 18)) }
-            case 1000000 { result := mul(SCALE, sub(6, 18)) }
-            case 10000000 { result := mul(SCALE, sub(7, 18)) }
-            case 100000000 { result := mul(SCALE, sub(8, 18)) }
-            case 1000000000 { result := mul(SCALE, sub(9, 18)) }
-            case 10000000000 { result := mul(SCALE, sub(10, 18)) }
-            case 100000000000 { result := mul(SCALE, sub(11, 18)) }
-            case 1000000000000 { result := mul(SCALE, sub(12, 18)) }
-            case 10000000000000 { result := mul(SCALE, sub(13, 18)) }
-            case 100000000000000 { result := mul(SCALE, sub(14, 18)) }
-            case 1000000000000000 { result := mul(SCALE, sub(15, 18)) }
-            case 10000000000000000 { result := mul(SCALE, sub(16, 18)) }
-            case 100000000000000000 { result := mul(SCALE, sub(17, 18)) }
-            case 1000000000000000000 { result := 0 }
-            case 10000000000000000000 { result := SCALE }
-            case 100000000000000000000 { result := mul(SCALE, 2) }
-            case 1000000000000000000000 { result := mul(SCALE, 3) }
-            case 10000000000000000000000 { result := mul(SCALE, 4) }
-            case 100000000000000000000000 { result := mul(SCALE, 5) }
-            case 1000000000000000000000000 { result := mul(SCALE, 6) }
-            case 10000000000000000000000000 { result := mul(SCALE, 7) }
-            case 100000000000000000000000000 { result := mul(SCALE, 8) }
-            case 1000000000000000000000000000 { result := mul(SCALE, 9) }
-            case 10000000000000000000000000000 { result := mul(SCALE, 10) }
-            case 100000000000000000000000000000 { result := mul(SCALE, 11) }
-            case 1000000000000000000000000000000 { result := mul(SCALE, 12) }
-            case 10000000000000000000000000000000 { result := mul(SCALE, 13) }
-            case 100000000000000000000000000000000 { result := mul(SCALE, 14) }
-            case 1000000000000000000000000000000000 { result := mul(SCALE, 15) }
-            case 10000000000000000000000000000000000 { result := mul(SCALE, 16) }
-            case 100000000000000000000000000000000000 { result := mul(SCALE, 17) }
-            case 1000000000000000000000000000000000000 { result := mul(SCALE, 18) }
-            case 10000000000000000000000000000000000000 { result := mul(SCALE, 19) }
-            case 100000000000000000000000000000000000000 { result := mul(SCALE, 20) }
-            case 1000000000000000000000000000000000000000 { result := mul(SCALE, 21) }
-            case 10000000000000000000000000000000000000000 { result := mul(SCALE, 22) }
-            case 100000000000000000000000000000000000000000 { result := mul(SCALE, 23) }
-            case 1000000000000000000000000000000000000000000 { result := mul(SCALE, 24) }
-            case 10000000000000000000000000000000000000000000 { result := mul(SCALE, 25) }
-            case 100000000000000000000000000000000000000000000 { result := mul(SCALE, 26) }
-            case 1000000000000000000000000000000000000000000000 { result := mul(SCALE, 27) }
-            case 10000000000000000000000000000000000000000000000 { result := mul(SCALE, 28) }
-            case 100000000000000000000000000000000000000000000000 { result := mul(SCALE, 29) }
-            case 1000000000000000000000000000000000000000000000000 { result := mul(SCALE, 30) }
-            case 10000000000000000000000000000000000000000000000000 { result := mul(SCALE, 31) }
-            case 100000000000000000000000000000000000000000000000000 { result := mul(SCALE, 32) }
-            case 1000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 33) }
-            case 10000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 34) }
-            case 100000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 35) }
-            case 1000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 36) }
-            case 10000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 37) }
-            case 100000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 38) }
-            case 1000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 39) }
-            case 10000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 40) }
-            case 100000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 41) }
-            case 1000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 42) }
-            case 10000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 43) }
-            case 100000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 44) }
-            case 1000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 45) }
-            case 10000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 46) }
-            case 100000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 47) }
-            case 1000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 48) }
-            case 10000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 49) }
-            case 100000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 50) }
-            case 1000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 51) }
-            case 10000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 52) }
-            case 100000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 53) }
-            case 1000000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 54) }
-            case 10000000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 55) }
-            case 100000000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 56) }
-            case 1000000000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 57) }
-            case 10000000000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 58) }
-            case 100000000000000000000000000000000000000000000000000000000000000000000000000000 { result := mul(SCALE, 59) }
-            default {
-                result := MAX_UD60x18
-            }
-        }
-
-        if (result == MAX_UD60x18) {
-            // Do the fixed-point division inline to save gas. The denominator is log2(10).
-            unchecked {
-                result = (log2(x) * SCALE) / 3_321928094887362347;
-            }
-        }
-    }
-
-    /// @notice Calculates the binary logarithm of x.
-    ///
-    /// @dev Based on the iterative approximation algorithm.
-    /// https://en.wikipedia.org/wiki/Binary_logarithm#Iterative_approximation
-    ///
-    /// Requirements:
-    /// - x must be greater than or equal to SCALE, otherwise the result would be negative.
-    ///
-    /// Caveats:
-    /// - The results are nor perfectly accurate to the last decimal, due to the lossy precision of the iterative approximation.
-    ///
-    /// @param x The unsigned 60.18-decimal fixed-point number for which to calculate the binary logarithm.
-    /// @return result The binary logarithm as an unsigned 60.18-decimal fixed-point number.
-    function log2(uint256 x) internal pure returns (uint256 result) {
-        if (x < SCALE) {
-            revert PRBMathUD60x18__LogInputTooSmall(x);
-        }
-        unchecked {
-            // Calculate the integer part of the logarithm and add it to the result and finally calculate y = x * 2^(-n).
-            uint256 n = PRBMath.mostSignificantBit(x / SCALE);
-
-            // The integer part of the logarithm as an unsigned 60.18-decimal fixed-point number. The operation can't overflow
-            // because n is maximum 255 and SCALE is 1e18.
-            result = n * SCALE;
-
-            // This is y = x * 2^(-n).
-            uint256 y = x >> n;
-
-            // If y = 1, the fractional part is zero.
-            if (y == SCALE) {
-                return result;
-            }
-
-            // Calculate the fractional part via the iterative approximation.
-            // The "delta >>= 1" part is equivalent to "delta /= 2", but shifting bits is faster.
-            for (uint256 delta = HALF_SCALE; delta > 0; delta >>= 1) {
-                y = (y * y) / SCALE;
-
-                // Is y^2 > 2 and so in the range [2,4)?
-                if (y >= 2 * SCALE) {
-                    // Add the 2^(-m) factor to the logarithm.
-                    result += delta;
-
-                    // Corresponds to z/2 on Wikipedia.
-                    y >>= 1;
-                }
-            }
-        }
-    }
-
-    /// @notice Multiplies two unsigned 60.18-decimal fixed-point numbers together, returning a new unsigned 60.18-decimal
-    /// fixed-point number.
-    /// @dev See the documentation for the "PRBMath.mulDivFixedPoint" function.
-    /// @param x The multiplicand as an unsigned 60.18-decimal fixed-point number.
-    /// @param y The multiplier as an unsigned 60.18-decimal fixed-point number.
-    /// @return result The product as an unsigned 60.18-decimal fixed-point number.
-    function mul(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        result = PRBMath.mulDivFixedPoint(x, y);
-    }
-
-    /// @notice Returns PI as an unsigned 60.18-decimal fixed-point number.
-    function pi() internal pure returns (uint256 result) {
-        result = 3_141592653589793238;
-    }
-
-    /// @notice Raises x to the power of y.
-    ///
-    /// @dev Based on the insight that x^y = 2^(log2(x) * y).
-    ///
-    /// Requirements:
-    /// - All from "exp2", "log2" and "mul".
-    ///
-    /// Caveats:
-    /// - All from "exp2", "log2" and "mul".
-    /// - Assumes 0^0 is 1.
-    ///
-    /// @param x Number to raise to given power y, as an unsigned 60.18-decimal fixed-point number.
-    /// @param y Exponent to raise x to, as an unsigned 60.18-decimal fixed-point number.
-    /// @return result x raised to power y, as an unsigned 60.18-decimal fixed-point number.
-    function pow(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        if (x == 0) {
-            result = y == 0 ? SCALE : uint256(0);
-        } else {
-            result = exp2(mul(log2(x), y));
-        }
-    }
-
-    /// @notice Raises x (unsigned 60.18-decimal fixed-point number) to the power of y (basic unsigned integer) using the
-    /// famous algorithm "exponentiation by squaring".
-    ///
-    /// @dev See https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-    ///
-    /// Requirements:
-    /// - The result must fit within MAX_UD60x18.
-    ///
-    /// Caveats:
-    /// - All from "mul".
-    /// - Assumes 0^0 is 1.
-    ///
-    /// @param x The base as an unsigned 60.18-decimal fixed-point number.
-    /// @param y The exponent as an uint256.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point number.
-    function powu(uint256 x, uint256 y) internal pure returns (uint256 result) {
-        // Calculate the first iteration of the loop in advance.
-        result = y & 1 > 0 ? x : SCALE;
-
-        // Equivalent to "for(y /= 2; y > 0; y /= 2)" but faster.
-        for (y >>= 1; y > 0; y >>= 1) {
-            x = PRBMath.mulDivFixedPoint(x, x);
-
-            // Equivalent to "y % 2 == 1" but faster.
-            if (y & 1 > 0) {
-                result = PRBMath.mulDivFixedPoint(result, x);
-            }
-        }
-    }
-
-    /// @notice Returns 1 as an unsigned 60.18-decimal fixed-point number.
-    function scale() internal pure returns (uint256 result) {
-        result = SCALE;
-    }
-
-    /// @notice Calculates the square root of x, rounding down.
-    /// @dev Uses the Babylonian method https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method.
-    ///
-    /// Requirements:
-    /// - x must be less than MAX_UD60x18 / SCALE.
-    ///
-    /// @param x The unsigned 60.18-decimal fixed-point number for which to calculate the square root.
-    /// @return result The result as an unsigned 60.18-decimal fixed-point .
-    function sqrt(uint256 x) internal pure returns (uint256 result) {
-        unchecked {
-            if (x > MAX_UD60x18 / SCALE) {
-                revert PRBMathUD60x18__SqrtOverflow(x);
-            }
-            // Multiply x by the SCALE to account for the factor of SCALE that is picked up when multiplying two unsigned
-            // 60.18-decimal fixed-point numbers together (in this case, those two numbers are both the square root).
-            result = PRBMath.sqrt(x * SCALE);
-        }
-    }
-
-    /// @notice Converts a unsigned 60.18-decimal fixed-point number to basic integer form, rounding down in the process.
-    /// @param x The unsigned 60.18-decimal fixed-point number to convert.
-    /// @return result The same number in basic integer form.
-    function toUint(uint256 x) internal pure returns (uint256 result) {
-        unchecked {
-            result = x / SCALE;
+            z := add(div(x, y), gt(mod(x, y), 0))
         }
     }
 }
@@ -4106,6 +2975,17 @@ pragma solidity ^0.8.9;
 
 
 
+// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+
+// import {PRBMathUD60x18} from "@prb/math/contracts/PRBMathUD60x18.sol";
+
+// import "prb-math/contracts/PRBMathUD60x18.sol";
+
+
+
+
+
+
 struct IncreaseLiquidityParams {
     uint256 tokenId;
     uint256 amount0Desired;
@@ -4114,13 +2994,6 @@ struct IncreaseLiquidityParams {
     uint256 amount1Min;
     uint256 deadline;
 }
-
-// Uniswap V3 mint params 
-// struct MintParams {
-//     uint24 uni3NftId;
-//     address user;
-//     uint totalLiquidity;
-// }
 
 struct MintParams {
     address token0;
@@ -4165,7 +3038,7 @@ struct ExactInputSingleParams {
 contract Token is ERC20 ("Test Token", "TT"){
 
 }
-contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
+contract PositionsNFT is ERC721, Pausable, AccessControl {
     using Counters for Counters.Counter;
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -4175,14 +3048,15 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
     mapping(address => mapping(uint=>uint)) public userNftPerPool;
 
     mapping(uint=>mapping(uint=>uint128)) public liquidityForUserInPoolAtState; // nft --> state --> liquidity 
-
+    
     mapping(uint => mapping(uint => uint)) public statesIdsForPosition;
 
     mapping(uint => uint) public totalStatesForPosition;
 
     mapping(uint => uint) public lastClaimForPosition;
 
-    mapping(uint => uint) public totalClaimedforPosition;
+    mapping(uint => uint) public totalClaimedforPositionToken0;
+    mapping(uint => uint) public totalClaimedforPositionToken1;
 
     constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -4219,6 +3093,12 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;
     }
 
+    function updateStatesIdsForPosition(uint positionNftId, uint _state)public onlyRole(MINTER_ROLE) {
+        totalStatesForPosition[positionNftId]++;
+        statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;
+
+    }
+
     // function incrementTotalStatesForUserPosition(uint positionNftId)public onlyRole(MINTER_ROLE) {
     //     return;
     //     // totalStatesForPosition[positionNftId]++;
@@ -4228,8 +3108,9 @@ contract PositionsNFT is ERC721, Pausable, AccessControl, ERC721Burnable {
         lastClaimForPosition[_positionNftId] = _state;
     }
 
-    function updateTotalClaimForPosition(uint _positionNftId, uint _totalClaim)public onlyRole(MINTER_ROLE) {
-        totalClaimedforPosition[_positionNftId] = _totalClaim;
+    function updateTotalClaimForPosition(uint _positionNftId, uint _newClaim0, uint _newClaim1)public onlyRole(MINTER_ROLE) {
+        totalClaimedforPositionToken0[_positionNftId] += _newClaim0;
+        totalClaimedforPositionToken1[_positionNftId] += _newClaim1;
     }
 
     function getLiquidityForUserInPoolAtState(uint _userPositionNft, uint _state) public view returns(uint128 liquidity){
@@ -4363,79 +3244,58 @@ contract YfSc{
     /// @notice Deployer of the smart contract
     /// @return owner the address of this smart contract's deployer
     address public owner;
-
     /// fees distribution 
     uint public statesCounter = 1; 
-
     // last state the liquidty of a uniswap nft was updated 
     mapping(uint=>uint) public liquidityLastStateUpdate; // nft --> last State Update for liquidity for Uni3 NFT
-
     // for a given uniswap nft, and a given state, returns the corresponding liquidty 
     mapping(uint => mapping(uint => uint128)) public totalLiquidityAtStateForNft; 
-
     // for a given uniswap nft, and a given state, returns the claimed reward for token 0
     mapping(uint => mapping(uint => uint)) public rewardAtStateForNftToken0; 
     // for a given uniswap nft, and a given state, returns the claimed reward for token 1
     mapping(uint => mapping(uint => uint)) public rewardAtStateForNftToken1; 
-
     // for a given uniswap nft, returns the total claimed reward for token 0
     mapping(uint => uint) public totalRewardForNftToken0; 
-
     // for a given uniswap nft, returns the total claimed reward for token 1
     mapping(uint => uint) public totalRewardForNftToken1; 
-
     // for a given uniswap nft, returns the total paid reward for token 0
     mapping(uint => uint) public totalRewardPaidForNftToken0; 
-
     // for a given uniswap nft, returns the total paid reward for token 1
     mapping(uint => uint) public totalRewardPaidForNftToken1; 
-
     // since the smart contract will be traking states for different pools, we need a counter for each pool
     mapping(uint => mapping(uint => uint)) public statesIdsForNft; 
-
     // to be able to loop through states of a given uniswap nft 
     mapping(uint => uint) public totalStatesForNft; 
-
     int24 public tickLower; 
     int24 public tickUpper;
-
     // deadline for transactions to be validated, otherwise reject
     uint public deadline = 600; 
-
-    uint public slippageToken0 = 500; // => 5 % 
-    uint public slippageToken1 = 500; // => 5 % 
-
+    uint private slippageToken0 = 500; // => 5 % 
+    uint private slippageToken1 = 500; // => 5 % 
     // quotitnt for slippage calculation
-    uint public quotient = 10000; 
-
+    uint private quotient = 10000; 
     // big number used to collect all the rewards from the pool in a given transaction 
-    uint128 public max_collect = 1e27; 
-
+    uint128 private max_collect = 1e27; 
     uint public liquidityLockTime = 3600 * 24 * 30; // one month liquidty lock time 
-    
     // track last deposit time for each user position, to be able to enforce the lock time 
     mapping(uint => uint) public liquidityLastDepositTime; // position nft => timestamp 
-
     // Position NFT contract, to generate and track users positions
-    PositionsNFT public positionsNFT; 
-
+    PositionsNFT private positionsNFT; 
     // Uniswap v3 position manager
-    NonfungiblePositionManager public nonfungiblePositionManager; 
-
+    NonfungiblePositionManager private nonfungiblePositionManager; 
     // Uniswap v3 router for internal swaps
-    ISwapRouter public iSwapRouter;
-
+    ISwapRouter private iSwapRouter;
+    // IQuoter public quoter;
     // The current pool nft id
     mapping(address => mapping(address => mapping(uint => uint))) public poolNftIds; // [token0][token1][fee] 
-    
     // The first nft id to be minted for a given pool configuration (token0, token1, fee)
     mapping(address => mapping(address => mapping(uint => uint))) public originalPoolNftIds; // [token0][token1][fee] = Original nft Id 
-
     mapping(address => uint) public totalRewards; 
-
+    mapping(uint => mapping(uint => uint)) public poolLiquidityChangeAmount; // pool nft => state => coef /10000 to track liquidity amount change durint rebalance in a given state
+    mapping(uint => mapping(uint => uint)) public poolLiquidityChangeDirection; // 1 for decrease, 2 for increase
     // Events
-    event NftMinted(uint tokenId, uint liquidityInPool, uint amount0, uint amount1);
-    event IncreaseLiquidity(uint128 liquidity, uint _amount0, uint _amount1, uint uniNft, uint yfNft);
+    // event NftMinted(uint tokenId, uint liquidityInPool, uint amount0, uint amount1);
+    // event IncreaseLiquidity(uint128 liquidity, uint _amount0, uint _amount1, uint uniNft, uint yfNft);
   
     /**
      * Contract initialization.
@@ -4448,10 +3308,9 @@ contract YfSc{
         nonfungiblePositionManager = _nonfungiblePositionManager;
         iSwapRouter = _iSwapRouter;
         owner = msg.sender;
-
-        tickLower = -887220;
-        tickUpper = 887220;
-
+ 
+        tickLower = -24000;
+        tickUpper = -23040;
     }
 
     // Modifier to check that the caller is the owner of
@@ -4475,25 +3334,28 @@ contract YfSc{
     /// @dev external method to be called only by the owner 
     /// @param _tickLower lower price range tick
     /// @param _tickUpper upper roce range tick
-    function setTicks(int24 _tickLower, int24 _tickUpper) public onlyOwner{
+    function setTicks(int24 _tickLower, int24 _tickUpper) internal {
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower);
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper);
         tickLower = _tickLower;
         tickUpper = _tickUpper;
     }
 
-    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) public onlyOwner {
+    function withdraw(address _token) public onlyOwner{
+        ERC20 token = ERC20(_token);
+        uint _balance = token.balanceOf(address(this));
+        token.transfer(msg.sender, _balance);
+    }
+
+    function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) internal  {
         address _factoryAddress = nonfungiblePositionManager.factory();
         Factory _factory = Factory(_factoryAddress);
         address _poolAddress = _factory.getPool(_token0, _token1, _fee);
         Pool pool = Pool(_poolAddress);
         (, int24 tick, , , , , ) = pool.slot0();
         int24 tickSpacing = pool.tickSpacing();
-
         int24 tickFloor = _floor(tick, tickSpacing);
-
         int24 tickCeil = tickFloor + tickSpacing;
-
         setTicks(tickFloor - _ticksDown * tickSpacing, tickCeil + _ticksUp * tickSpacing);
     }
 
@@ -4525,6 +3387,39 @@ contract YfSc{
         liquidityLockTime = _liquidityLockTime;
     }
 
+    function sqrtRatios(address _token0, address _token1, uint24 _fee) 
+    internal returns (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96){
+        address _factoryAddress = nonfungiblePositionManager.factory();
+        Factory _factory = Factory(_factoryAddress);
+        address _poolAddress = _factory.getPool(_token0, _token1, _fee);
+        Pool pool = Pool(_poolAddress);
+        int24 tick;
+        (sqrtPriceX96, tick, , , , , ) = pool.slot0();
+        sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
+        sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(tickLower);
+        sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(tickUpper);
+        return (sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, sqrtPriceX96);
+    }
+
+    function liquidityAmounts(uint _amount0, uint _amount1, uint160 _sqrtRatioX96, uint160 _sqrtPriceX96, uint160 _sqrtRatioAX96, uint160 _sqrtRatioBX96) internal returns (uint _adjustedAmount0, uint _adjustedAmount1){
+        
+        uint128 _liquidityForAmounts = getLiquidityForAmounts(_sqrtRatioX96, _sqrtRatioAX96, _sqrtRatioBX96, _amount0, _amount1);  
+        return (0,0);
+        _adjustedAmount0 = getAmount0Delta(
+                    _sqrtPriceX96,
+                    _sqrtRatioBX96,
+                    _liquidityForAmounts,
+                    true
+                );
+        _adjustedAmount1 = getAmount1Delta(
+                    _sqrtRatioAX96,
+                    _sqrtPriceX96,
+                    _liquidityForAmounts,
+                    true
+                );
+        return (_adjustedAmount0, _adjustedAmount1);
+    }
+
     /// @notice external function 
     /// Allow o update the ticks of a given position,
     /// you should call setTicks before to update ticks values to the new price range
@@ -4532,129 +3427,108 @@ contract YfSc{
     /// @param _token0 The first token of the liquidity pool pair
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool 
-    function updatePosition(address _token0, address _token1, uint24 _fee) external onlyOwner {
-
+    function updatePosition(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) external onlyOwner {
         // initialise the pool tokens contracts
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
 
-        // store the laste state counter value 
         uint oldStateCounter = statesCounter;
-
+        
         // before updating the position, we first claim all the pending rewards for both tokens
-        collect(_token0, _token1, _fee, 0, 0);
-
-        // We store the contract balance of bothe tokens to knwo the precise amount of liquidity tokens removed
-        uint oldBalanceToken0 = token0.balanceOf(address(this));
-        uint oldBalanceToken1 = token1.balanceOf(address(this));
-
+        collect(_token0, _token1, _fee, 0, 0, true);
+  
         // decrease 100% of the liquidity. 'false' to indicate that liquidity sates have not been updated yet 
-        decreaseLiquidity(_token0, _token1, _fee, 100, false);
-
+        (uint _amount0, uint _amount1) = decreaseLiquidity(_token0, _token1, _fee, 100, true);
+        
         // pull the new tokens balances to calculate the total received tokens after liquidty being removed, 
         // to add them back using the new ticks
         uint newBalanceToken0 = token0.balanceOf(address(this));
         uint newBalanceToken1 = token1.balanceOf(address(this));
-        
-        // Get the current nft id to be burned
-        uint _nftId = poolNftIds[_token0][_token1][_fee];
 
         // reset the nft id for the pool to be able to store the new nft id that will be minted 
         poolNftIds[_token0][_token1][_fee] = 0;
 
-        // prepare the values to be added as liquidity in the new price range
-        uint _amount0 = newBalanceToken0;
-
-        // calculate the amount of the token1 using this formula to minimize internal swaps 
-        uint _amount1 = getAmount1ForAmount0(tickLower, tickUpper, _amount0);
-
         // apply the slippage params 
-        uint _amount0Min = newBalanceToken0 - newBalanceToken0 * slippageToken0 / quotient;
-        uint _amount1Min = newBalanceToken1- newBalanceToken1 * slippageToken1 / quotient;
+        uint _amount0Min = 0 ; //newBalanceToken0 - newBalanceToken0 * slippageToken0 / quotient;
+        uint _amount1Min = 0 ; //newBalanceToken1- newBalanceToken1 * slippageToken1 / quotient;
 
-        // Since decrease liquidity sends the tokens back to the owner wallet, we have to transfer them back
-        token0.transferFrom(msg.sender, address(this), _amount0);
-        token1.transferFrom(msg.sender, address(this), _amount1);
-
-        // approve the uniswap v3 position manager to spend the tokens to mint the position 
-        token0.approve(address(nonfungiblePositionManager), _amount0);
-        token1.approve(address(nonfungiblePositionManager), _amount1);
+        setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
         
-        // we can apply the slippage formula, but this is better for transactions fees
-        _amount0Min = 0 ;
-        _amount1Min = 0 ; 
-
-        MintParams memory mintParams;
-
-        // prepare mint params 
-        mintParams = MintParams(
-                    _token0, 
-                    _token1, 
-                    _fee, 
-                    tickLower, 
-                    tickUpper, 
-                    _amount0, 
-                    _amount1, 
-                    0, 
-                    0, 
-                    address(this), 
-                    block.timestamp + deadline 
-                    );
-
-        //Mint the new position
-        (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        ) = nonfungiblePositionManager.mint(mintParams);
-
-        emit NftMinted(tokenId, liquidity, amount0, amount1);
-
-        // update the uniswap nft 
-        poolNftIds[_token0][_token1][_fee] = tokenId;
-
-        // update the uniswap nft 
-        poolNftIds[_token1][_token0][_fee] = tokenId;
-
-        uint balanceToken0After = token0.balanceOf(address(this));
-        uint balanceToken1After = token1.balanceOf(address(this));
-
-        // in case some tokens wasn t added as liquidity, send back to caller 
-        if(balanceToken0After > oldBalanceToken0){
-            token0.transfer(msg.sender, balanceToken0After - oldBalanceToken0);
+        (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
+        
+        (uint _adjustedAmount0, uint _adjustedAmount1) = liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+        
+        if (_adjustedAmount0 < _amount0*95/100){
+            _adjustedAmount1 += swapExess(_token0, _token1, _fee, (_amount0 - _adjustedAmount0)/2);
+            _adjustedAmount0 = _amount0 - (_amount0 - _adjustedAmount0)/2;
+            (_adjustedAmount0, _adjustedAmount1) = liquidityAmounts(_adjustedAmount0, _adjustedAmount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+        }else if (_adjustedAmount1 < _amount1*95/100){
+            _adjustedAmount0 += swapExess(_token1, _token0, _fee,(_amount1 - _adjustedAmount1)/2) ;
+            _adjustedAmount1 = (_amount1 - (_amount1 - _adjustedAmount1)/2);
+            (_adjustedAmount0, _adjustedAmount1) = liquidityAmounts(_adjustedAmount0, _adjustedAmount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
         }
+        // approve the uniswap v3 position manager to spend the tokens to mint the position 
+        token0.approve(address(nonfungiblePositionManager), _adjustedAmount0);
+        token1.approve(address(nonfungiblePositionManager), _adjustedAmount1);
+        uint _balance0 = token0.balanceOf(address(this));
+        uint _balance1 = token1.balanceOf(address(this));
+        // return;
+        uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, _amount0Min, _amount1Min);
+        // uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, min(_adjustedAmount0, _balance0), min(_adjustedAmount1, _balance1), _amount0Min, _amount1Min);
 
-        // in case some tokens wasn t added as liquidity, send back to caller 
-        if(balanceToken1After > oldBalanceToken1){
-            token1.transfer(msg.sender, balanceToken1After - oldBalanceToken1);
-        }
-
-        // get the fist uniswap nft minted for the tokens pair - fee
-        uint _originalPositionNft = originalPoolNftIds[_token0][_token1][_fee];
-
-        (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_nftId);
-
-        totalLiquidityAtStateForNft[_nftId][oldStateCounter] = _liquidity; 
-
-        statesIdsForNft[_originalPositionNft][totalStatesForNft[_originalPositionNft]] = statesCounter;
-        totalStatesForNft[_originalPositionNft]++;
-
-        liquidityLastStateUpdate[_originalPositionNft] = statesCounter;
-
-        statesCounter++ ;
+        // uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
     }
 
-    /// @notice internal function used to create new uniswap v3 position
-    /// @dev internal function
-    /// @param _token0 The first token of the liquidity pool pair
-    /// @param _token1 The second token of the liquidity pool pair
-    /// @param _fee The desired fee for the pool  
-    /// @param _amount0 desired amount of token 0 to be deposited
-    /// @param _amount1 desired amount of token 1 to be deposited
-    /// @param _amount0Min minimum accepted amount of token 0
-    /// @param _amount1Min minimum accepted amount of token 1
-    /// @return liquidity the total amount of liquidity added
+    function updateLiquidityVariables(uint _originalNftId, 
+                                      uint128 _newLiquidity, 
+                                      bool _rebalance) internal {
+        totalLiquidityAtStateForNft[_originalNftId][statesCounter] = _newLiquidity;
+        if (_rebalance) return;
+        uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
+        liquidityLastDepositTime[_userNftId] = block.timestamp;
+        uint128 _previousLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
+
+        if(_previousLiq > _newLiquidity){
+            positionsNFT.updateLiquidityForUser(_userNftId, 
+            _previousLiq - (_previousLiq - _newLiquidity), 
+            statesCounter);
+        } else {
+            positionsNFT.updateLiquidityForUser(_userNftId, 
+            _previousLiq + (_newLiquidity - _previousLiq), 
+            statesCounter);
+        }
+    }
+
+    function updateStateCounters(uint _originalNftId, uint _userNftId) internal {
+        totalStatesForNft[_originalNftId]++;
+        statesCounter++;
+        statesIdsForNft[_originalNftId][totalStatesForNft[_originalNftId]] = statesCounter;
+        liquidityLastStateUpdate[_originalNftId] = statesCounter;
+        if(_userNftId == 0) return; // if rebalance no user nft to update
+        uint positionNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
+        positionsNFT.updateStatesIdsForPosition(positionNftId, statesCounter);
+        
+    }
+
+    function updateRewardVariables(uint _originalNftId, uint _rewardAmount0, uint _rewardAmount1) internal{
+        rewardAtStateForNftToken0[_originalNftId][statesCounter] = _rewardAmount0;
+        rewardAtStateForNftToken1[_originalNftId][statesCounter] = _rewardAmount1;
+        totalRewardForNftToken0[_originalNftId] += _rewardAmount0;
+        totalRewardForNftToken1[_originalNftId] += _rewardAmount1;
+    }
+
+    function updateClaimVariables(uint _originalNftId, uint _claimAmount0, uint _claimAmount1) internal {
+        totalRewardPaidForNftToken0[_originalNftId] += _claimAmount0;
+        totalRewardPaidForNftToken1[_originalNftId] += _claimAmount1;
+        uint _positionNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
+        positionsNFT.updateLastClaimForPosition(_positionNftId, statesCounter);
+        positionsNFT.updateTotalClaimForPosition(_positionNftId, _claimAmount0, _claimAmount1);
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a <= b ? a : b;
+    }
+
     function mintUni3Nft(
                             address _token0, 
                             address _token1, 
@@ -4681,10 +3555,11 @@ contract YfSc{
                     address(this), 
                     block.timestamp + deadline 
                     );
-
-        (uint256 tokenId, uint128 _liquidity , uint __amount0, uint __amount1) = nonfungiblePositionManager.mint(mintParams);
-
-        emit NftMinted(tokenId, liquidity, __amount0, __amount1);
+        
+        (uint256 tokenId, 
+        uint128 _liquidity , 
+        uint __amount0, 
+        uint __amount1) = nonfungiblePositionManager.mint(mintParams);
 
         if (originalPoolNftIds[_token0][_token1][_fee] == 0 && originalPoolNftIds[_token1][_token0][_fee] == 0){
             originalPoolNftIds[_token1][_token0][_fee] = tokenId;
@@ -4692,9 +3567,7 @@ contract YfSc{
         }
 
         poolNftIds[_token0][_token1][_fee] = tokenId;
-
         poolNftIds[_token1][_token0][_fee] = tokenId;
-
         positionsNFT.safeMint(tokenId, msg.sender, _liquidity, statesCounter);
 
         liquidity = _liquidity;
@@ -4722,7 +3595,7 @@ contract YfSc{
                             internal returns(uint128 _liquidity){
 
         uint tokenId = poolNftIds[_token0][_token1][_fee] > 0 ? poolNftIds[_token0][_token1][_fee] : poolNftIds[_token1][_token0][_fee];
-        uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
+        uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
         (,,,,,,,uint128 oldLiquidity,,,,) = nonfungiblePositionManager.positions(tokenId);
 
         IncreaseLiquidityParams memory increaseLiquidityParams; 
@@ -4733,51 +3606,24 @@ contract YfSc{
                     _amount0Min, 
                     _amount1Min, 
                     block.timestamp + deadline); 
-        (uint128 liquidity, uint amount0, uint amount1) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams);
-        _liquidity = liquidity;
+        (uint128 _addedLiquidity, uint amount0, uint amount1) = nonfungiblePositionManager.increaseLiquidity(increaseLiquidityParams);
+        uint128 _newLiquidity = oldLiquidity + _addedLiquidity;
+        uint userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
 
-        totalLiquidityAtStateForNft[tokenId][statesCounter] = liquidity; 
-        uint userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _nftId);
-        emit IncreaseLiquidity(liquidity, amount0, amount1, tokenId, userPositionNft);
-        
-        uint128 userAddedLiquidty = liquidity ; 
-        uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(userPositionNft);
-        uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(userPositionNft, lastLiquidityUpdateStateForPosition);
-        
-        uint128 userOldLiquidityInPool = positionsNFT.getLiquidityForUserInPoolAtState(userPositionNft, userPositionLastUpdateState);
-    
-        if(positionsNFT.getUserNftPerPool(msg.sender, _nftId) == 0){
-            positionsNFT.safeMint(_nftId, msg.sender, userAddedLiquidty, statesCounter);
+        if(userPositionNft == 0 && msg.sender != owner){
+            positionsNFT.safeMint(_originalNftId, msg.sender, _addedLiquidity, statesCounter + 1);
+            userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
         }
-        // else{
-        //     positionsNFT.updateLiquidityForUser(userPositionNft, userAddedLiquidty + userOldLiquidityInPool, statesCounter);
-        // }
+
+        if (msg.sender == owner){ // means rebalance
+            updateStateCounters(_originalNftId, 0);
+            updateLiquidityVariables(_originalNftId, _newLiquidity, true);
+        } else{
+            updateStateCounters(_originalNftId, userPositionNft);
+            updateLiquidityVariables(_originalNftId, _newLiquidity, false);
+        }
     
-        return liquidity;
-    }
-
-    function swapAndLiquify(address _token0, address _token1, uint24 _fee, uint half) internal returns (uint128){
-        ERC20 token0 = ERC20(_token0);
-        ERC20 token1 = ERC20(_token1); 
-        ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
-        _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
-            _token0, 
-            _token1, 
-            _fee, 
-            address(this), 
-            block.timestamp + deadline,
-            half,
-            0,
-            0
-        );
-
-        token0.approve(address(iSwapRouter), half);
-        uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
-        uint _amountMin = 0; 
-
-        token0.approve(address(nonfungiblePositionManager), half);
-        token1.approve(address(nonfungiblePositionManager), amountOut);
-        return increaseUni3Nft(_token0, _token1, _fee, half, amountOut, _amountMin, _amountMin);
+        return _newLiquidity;
     }
 
     /// @notice Allow user to deposit liquidity, mint corresponding uniswap NFT and position NFT, 
@@ -4799,71 +3645,72 @@ contract YfSc{
     address _token1, 
     uint24 _fee, 
     uint _amount0,
-    uint _amount1
+    uint _amount1,
+    int24 _ticksUp,
+    int24 _ticksDown
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1); 
-
+        
         uint oldBalanceToken0 = token0.balanceOf(address(this));
         uint oldBalanceToken1 = token1.balanceOf(address(this));
+        
+        setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
+
+        (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
+
+        uint128 _liquidityForAmounts = getLiquidityForAmounts(sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, _amount0, _amount1);
+
+        _amount0 = getAmount0Delta(sqrtPriceX96, sqrtRatioBX96, _liquidityForAmounts, true);
+        _amount1 = getAmount1Delta(sqrtRatioAX96, sqrtPriceX96, _liquidityForAmounts, true);
 
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);
-        
         token0.approve(address(nonfungiblePositionManager), _amount0);
         token1.approve(address(nonfungiblePositionManager), _amount1);
-
+        
+        ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
         uint _amount0Min = 0;
         uint _amount1Min = 0;
-
-        collect(_token0, _token1, _fee, 0, 0);
-
-        uint128 _liquidityAdded;
+        uint128 _newLiquidity;
 
         if(poolNftIds[_token0][_token1][_fee] == 0 && poolNftIds[_token1][_token0][_fee] == 0)
         {
-            _liquidityAdded = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
-        }else{
-            _liquidityAdded = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
-        }  
+            _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _amount0, _amount1, _amount0Min, _amount1Min);
+            uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
+            uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
 
-        _liquidityAdded = handleExess(_token0, _token1, _fee, _liquidityAdded, oldBalanceToken0, oldBalanceToken1);
-        updateStateVariables(_token0, _token1, _fee, _liquidityAdded);
+            updateStateCounters(_originalNftId, _userNftId);
+            updateLiquidityVariables(_originalNftId, _newLiquidity, false);
+        }else{
+            uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
+            uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
+
+            updateStateCounters(_originalNftId, _userNftId); // not correct, what if no nft id so far ? 
+            
+            collect(_token0, _token1, _fee, 0, 0, false);
+            _newLiquidity = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
+        }  
     }
 
-    function handleExess(address _token0, address _token1, uint24 _fee, uint128 _liquidityAdded, uint _oldBalanceToken0, uint _oldBalanceToken1) internal returns (uint128){
+    function swapExess(address _token0, address _token1, uint24 _fee, uint half) internal returns (uint){
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1); 
-        uint newBalanceToken0 = token0.balanceOf(address(this));
-        uint newBalanceToken1 = token1.balanceOf(address(this));
-        if(newBalanceToken0 - _oldBalanceToken0 > 0){
-            _liquidityAdded += swapAndLiquify(_token0, _token1, _fee, (newBalanceToken0 - _oldBalanceToken0)/2);
-        }else if(newBalanceToken1 - _oldBalanceToken1 > 0){
-            _liquidityAdded += swapAndLiquify(_token1, _token0, _fee, (newBalanceToken1 - _oldBalanceToken1)/2);  
-        }
-        return _liquidityAdded;
-    }
+        ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
+        _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
+            _token0, 
+            _token1, 
+            _fee, 
+            address(this), 
+            block.timestamp + deadline,
+            half,
+            0,
+            0
+        );
 
-    function updateStateVariables(address _token0, address _token1, uint24 _fee, uint128 _liquidityAdded) internal {
-
-        uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
-        uint _poolNftId = poolNftIds[_token0][_token1][_fee];
-
-        (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
-
-        uint userNft = positionsNFT.getUserNftPerPool(msg.sender, _nftId);
-        positionsNFT.updateLiquidityForUser(userNft, _liquidityAdded, statesCounter);
-
-        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
-
-        liquidityLastStateUpdate[_nftId] = statesCounter;
-
-        statesIdsForNft[_nftId][totalStatesForNft[_nftId]] = statesCounter;
-        totalStatesForNft[_nftId]++;
-
-        statesCounter++ ;
-
-        liquidityLastDepositTime[userNft] = block.timestamp;
+        token0.approve(address(iSwapRouter), half);
+        uint256 amountOut = iSwapRouter.exactInputSingle(_exactInputSingleParams);
+        return amountOut; 
     }
 
     /// @notice Allow user to withdraw liquidity from a given position, 
@@ -4873,22 +3720,22 @@ contract YfSc{
     /// @param _token1 The second token of the liquidity pool pair
     /// @param _fee The desired fee for the pool  
     /// @param _purcentage desired % of the users liquidity to be removed
-    /// @param _notYetpdated always set to true, it is set to false only internally
-    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _notYetpdated) public {
-        
+    /// @param _rebalance always set to true for external calls, it is set to false only internally
+    function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _rebalance) public returns (uint, uint) { 
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
-        uint _poolOriginalNftId = originalPoolNftIds[_token0][_token1][_fee];
-        uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _poolOriginalNftId);
+        uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
+        
+        uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
         require(liquidityLastDepositTime[_userNftId] < block.timestamp + liquidityLockTime, "liquidity locked !");
-
+        
         uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
         uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition);
         uint128 _userLiquidity = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
-     
+
         uint128 _liquidityToRemove = _userLiquidity * _purcentage / 100;
 
-        uint _amount0Min = 0; 
-        uint _amount1Min = 0; 
+        uint _amount0Min = 0;
+        uint _amount1Min = 0;
 
         DecreaseLiquidityParams memory decreaseLiquidityParams;
         decreaseLiquidityParams = DecreaseLiquidityParams(
@@ -4897,34 +3744,21 @@ contract YfSc{
                     _amount0Min, 
                     _amount1Min, 
                     block.timestamp + deadline); 
-
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
         (,,,,,,,,,,uint128 tokensOwed0_before,uint128 tokensOwed1_before) = nonfungiblePositionManager.positions(_poolNftId);
-
+        
         nonfungiblePositionManager.decreaseLiquidity(decreaseLiquidityParams);
 
-        (,,,,,,,,,,uint128 tokensOwed0_after,uint128 tokensOwed1_after) = nonfungiblePositionManager.positions(_poolNftId);
-
-        collect(_token0, _token1, _fee, tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before);
+        (,,,,,,,uint128 _newLiquidity,,,uint128 tokensOwed0_after,uint128 tokensOwed1_after) = nonfungiblePositionManager.positions(_poolNftId);
+        collect(_token0, _token1, _fee, tokensOwed0_before, tokensOwed1_before, _rebalance);
 
         (,,,,,,,uint128 _liquidity,,,,) = nonfungiblePositionManager.positions(_poolNftId);
+
+        updateStateCounters(_originalNftId, _userNftId);
+        updateLiquidityVariables(_originalNftId, _newLiquidity, _rebalance);
         
-        uint _nftId = originalPoolNftIds[_token0][_token1][_fee];
-        totalLiquidityAtStateForNft[_nftId][statesCounter] = _liquidity; 
-
-        if(_notYetpdated){
-            
-            liquidityLastStateUpdate[_nftId] = statesCounter;
-
-            positionsNFT.updateLiquidityForUser(_nftId, _userLiquidity - _liquidityToRemove, statesCounter);
-            
-            statesIdsForNft[_poolOriginalNftId][totalStatesForNft[_nftId]] = statesCounter;
-            totalStatesForNft[_poolOriginalNftId]++;
-
-            statesCounter++;
-        }
-   
+        return (tokensOwed0_after - tokensOwed0_before, tokensOwed1_after - tokensOwed1_before);
     }
     
     /// @notice returns the pending rewards for a user in a given pool
@@ -4978,19 +3812,23 @@ contract YfSc{
     /// @param _fee The desired fee for the pool  
     /// @param _tokensOwed0 external caller should enter 0, a positive value is used in case of decreaseliquidity internal call
     /// @param _tokensOwed1 external caller should enter 0, a positive value is used in case of decreaseliquidity internal call
-    function collect(address _token0, address _token1, uint _fee, uint128 _tokensOwed0, uint128 _tokensOwed1) public {
+    /// @param _rebalance if rebalance is to true, means keep rewards and tokens in the smart contract, if false send to the caller
+    function collect(address _token0, 
+    address _token1, 
+    uint _fee, 
+    uint128 _tokensOwed0, 
+    uint128 _tokensOwed1, 
+    bool _rebalance) public {
+        ERC20 token0 = ERC20(_token0);
+        ERC20 token1 = ERC20(_token1);
         uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee]; // get first pool nft id 
         uint _poolNftId = poolNftIds [_token0][_token1][_fee]; // get first pool nft id 
         uint _userPositionNft = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
-
+        
         CollectParams memory collectParams;
-
-        ERC20 token0 = ERC20(_token0);
-        ERC20 token1 = ERC20(_token1);
 
         uint oldBalanceToken0 = token0.balanceOf(address(this));
         uint oldBalanceToken1 = token1.balanceOf(address(this));
-        (,,,,,,,uint128 poolLiquidity,,,uint128 tokensOwed0,uint128 tokensOwed1) = nonfungiblePositionManager.positions(_poolNftId);
         collectParams = CollectParams(
                     _poolNftId, 
                     address(this), 
@@ -5004,84 +3842,27 @@ contract YfSc{
         uint new_reward0 = newBalanceToken0 - oldBalanceToken0 - _tokensOwed0;
         uint new_reward1 = newBalanceToken1 - oldBalanceToken1 - _tokensOwed1;
 
-        totalRewards[_token0] = totalRewards[_token0] + new_reward0;
+        updateRewardVariables(_originalNftId, new_reward0, new_reward1);
 
-        totalRewards[_token1] = totalRewards[_token1] + new_reward1;
-
-        totalRewardForNftToken0[_originalNftId] += new_reward0;
-        totalRewardForNftToken1[_originalNftId] += new_reward1;
-
-        rewardAtStateForNftToken0[_originalNftId][statesCounter] = new_reward0;
-        rewardAtStateForNftToken1[_originalNftId][statesCounter]= new_reward1;
-
-        // totalLiquidityAtStateForNft[_originalNftId][statesCounter] = poolLiquidity;
-
-        uint totalStatesForPosition = positionsNFT.totalStatesForPosition(_userPositionNft);
-
-        uint128 liquidityAtLastStateForPosition = positionsNFT.getLiquidityForUserInPoolAtState(_userPositionNft, totalStatesForPosition - 1);
-
-        uint _lastClaimState = positionsNFT.lastClaimForPosition(_userPositionNft);
+        if (_userPositionNft == 0) return;
 
         (uint _rewardToken0, uint _rewardToken1) = getPendingrewardForPosition(_token0, _token1, _fee);
+        // bool claimed = false;
 
-        totalRewardPaidForNftToken0[_originalNftId] += _rewardToken0;
-        totalRewardPaidForNftToken1[_originalNftId] += _rewardToken1;
-        bool claimed = false;
-        if (_rewardToken0 + _tokensOwed0 > 0){
-            // send maximum the smart contract balance
-            token0.transfer(msg.sender, _rewardToken0 + _tokensOwed0);
-            claimed = true;
+        if (_rebalance){
+            return ;
         }
-        if (_rewardToken1 + _tokensOwed1 > 0){
-            token1.transfer(msg.sender, _rewardToken1 + _tokensOwed1);
-            claimed = true;
+        if (_rewardToken0 + _tokensOwed0 > 0 || true){
+            // token0.transfer(msg.sender, _rewardToken0 + _tokensOwed0);
+            token0.transfer(msg.sender, totalRewardForNftToken0[_originalNftId]);
+            // claimed = true;
         }
-        if(claimed){
-            positionsNFT.updateLastClaimForPosition(_userPositionNft, statesCounter);
+        if (_rewardToken1 + _tokensOwed1 > 0 || true){
+            // token1.transfer(msg.sender, _rewardToken1 + _tokensOwed1);
+            token1.transfer(msg.sender, totalRewardForNftToken1[_originalNftId]);
+            // claimed = true;
         }
-    }
-
-    /// @notice Computes the required amount of token1 for a given amount of token0 and price range
-    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower))
-    /// @param _tickLower tick lower
-    /// @param _tickUpper tick upper
-    /// @param amount0 The amount0 being sent in
-    /// @return amount1 The amount of returned liquidity
-    function getAmount1ForAmount0(
-        int24 _tickLower,
-        int24 _tickUpper,
-        uint256 amount0
-    ) public pure returns (uint256 amount1) {
-        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower); //A sqrt price representing the first tick boundary
-        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper); //A sqrt price representing the second tick boundary
-        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-        uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
-        uint128 liquidity = toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
-        amount1 = FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
-        return amount1;
-    }
-
-    function checkTick(int24 _tick)public view returns (uint160){
-        return TickMath.getSqrtRatioAtTick(_tick);
-    }
-
-    function computeTick(uint160 sqrtPriceX96) public view returns (int24){
-        return -887220;
-        return TickMath.getTickAtSqrtRatio(sqrtPriceX96);
-    }
-
-    function _sqrt(uint _x) internal pure returns(uint y) {
-        uint z = (_x + 1) / 2;
-        y = _x;
-        while (z < y) {
-            y = z;
-            z = (_x / z + z) / 2;
-        }
-    }
-    
-    function getSqrtPriceX96(uint priceA, uint priceB) public view returns (uint) {
-        uint ratioX192 = (priceA << 192) / priceB;
-        return _sqrt(ratioX192);
+        updateClaimVariables(_originalNftId, _rewardToken0, _rewardToken1);
     }
 
     /// @dev Rounds tick down towards negative infinity so that it's a multiple
@@ -5092,32 +3873,118 @@ contract YfSc{
         return compressed * tickSpacing;
     }
 
-    /// @notice Given a tick and a token amount, calculates the amount of token received in exchange
-    /// @param tick Tick value used to calculate the quote
-    /// @param baseAmount Amount of token to be converted
-    /// @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
-    /// @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
-    /// @return quoteAmount Amount of quoteToken received for baseAmount of baseToken
-    function getQuoteAtTick(
-        int24 tick,
-        uint128 baseAmount,
-        address baseToken,
-        address quoteToken
-    ) internal pure returns (uint256 quoteAmount) {
-        uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
+    /// @notice Computes the amount of liquidity received for a given amount of token0 and price range
+    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower))
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param amount0 The amount0 being sent in
+    /// @return liquidity The amount of returned liquidity
+    function getLiquidityForAmount0(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint256 amount0
+    ) internal pure returns (uint128 liquidity) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
+        return toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
+    }
 
-        // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
-        if (sqrtRatioX96 <= type(uint128).max) {
-            uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-            quoteAmount = baseToken < quoteToken
-                ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
-                : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+    /// @notice Computes the maximum amount of liquidity received for a given amount of token0, token1, the current
+    /// pool prices and the prices at the tick boundaries
+    /// @param sqrtRatioX96 A sqrt price representing the current pool prices
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param amount0 The amount of token0 being sent in
+    /// @param amount1 The amount of token1 being sent in
+    /// @return liquidity The maximum amount of liquidity received
+    function getLiquidityForAmounts(
+        uint160 sqrtRatioX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint256 amount0,
+        uint256 amount1
+    ) internal pure returns (uint128 liquidity) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+        if (sqrtRatioX96 <= sqrtRatioAX96) {
+            liquidity = getLiquidityForAmount0(sqrtRatioAX96, sqrtRatioBX96, amount0);
+        } else if (sqrtRatioX96 < sqrtRatioBX96) {
+            uint128 liquidity0 = getLiquidityForAmount0(sqrtRatioX96, sqrtRatioBX96, amount0);
+            uint128 liquidity1 = getLiquidityForAmount1(sqrtRatioAX96, sqrtRatioX96, amount1);
+
+            liquidity = liquidity0 < liquidity1 ? liquidity0 : liquidity1;
         } else {
-            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
-            quoteAmount = baseToken < quoteToken
-                ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
-                : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
+            liquidity = getLiquidityForAmount1(sqrtRatioAX96, sqrtRatioBX96, amount1);
         }
     }
 
+    /// @notice Computes the amount of liquidity received for a given amount of token1 and price range
+    /// @dev Calculates amount1 / (sqrt(upper) - sqrt(lower)).
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param amount1 The amount1 being sent in
+    /// @return liquidity The amount of returned liquidity
+    function getLiquidityForAmount1(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint256 amount1
+    ) internal pure returns (uint128 liquidity) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        return toUint128(FullMath.mulDiv(amount1, FixedPoint96.Q96, sqrtRatioBX96 - sqrtRatioAX96));
+    }
+
+    /// @notice Gets the amount0 delta between two prices
+    /// @dev Calculates liquidity / sqrt(lower) - liquidity / sqrt(upper),
+    /// i.e. liquidity * (sqrt(upper) - sqrt(lower)) / (sqrt(upper) * sqrt(lower))
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
+    /// @param liquidity The amount of usable liquidity
+    /// @param roundUp Whether to round the amount up or down
+    /// @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
+    function getAmount0Delta(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity,
+        bool roundUp
+    ) public pure returns (uint256 amount0) {
+        unchecked {
+            if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+            uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
+
+            require(sqrtRatioAX96 > 0);
+
+            return
+                roundUp
+                    ? UnsafeMath.divRoundingUp(
+                        FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
+                        sqrtRatioAX96
+                    )
+                    : FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
+        }
+    }
+
+    /// @notice Gets the amount1 delta between two prices
+    /// @dev Calculates liquidity * (sqrt(upper) - sqrt(lower))
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
+    /// @param liquidity The amount of usable liquidity
+    /// @param roundUp Whether to round the amount up, or down
+    /// @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
+    function getAmount1Delta(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity,
+        bool roundUp
+    ) public pure returns (uint256 amount1) {
+        unchecked {
+            if (    sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+            return
+                roundUp
+                    ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
+                    : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        }
+    }
 }
