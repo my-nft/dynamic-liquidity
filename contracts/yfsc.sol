@@ -482,7 +482,7 @@ contract YfSc{
         liquidityLockTime = _liquidityLockTime;
     }
 
-    function sqrtRatios(address _token0, address _token1, uint24 _fee) 
+    function sqrtRatios(address _token0, address _token1, uint24 _fee) external
      returns (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96){
         address _factoryAddress = nonfungiblePositionManager.factory();
         Factory _factory = Factory(_factoryAddress);
@@ -500,6 +500,7 @@ contract YfSc{
     uint _amount0, uint _amount1, 
     uint160 _sqrtRatioX96, uint160 _sqrtPriceX96, 
     uint160 _sqrtRatioAX96, uint160 _sqrtRatioBX96)  
+    external
     returns (uint _adjustedAmount0, uint _adjustedAmount1){
         
         uint128 _liquidityForAmounts = getLiquidityForAmounts(_sqrtRatioX96, _sqrtRatioAX96, _sqrtRatioBX96, _amount0, _amount1);
