@@ -483,7 +483,7 @@ contract YfSc{
     }
 
     function sqrtRatios(address _token0, address _token1, uint24 _fee) 
-    internal returns (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96){
+     returns (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96){
         address _factoryAddress = nonfungiblePositionManager.factory();
         Factory _factory = Factory(_factoryAddress);
         address _poolAddress = _factory.getPool(_token0, _token1, _fee);
@@ -499,8 +499,7 @@ contract YfSc{
     function liquidityAmounts(
     uint _amount0, uint _amount1, 
     uint160 _sqrtRatioX96, uint160 _sqrtPriceX96, 
-    uint160 _sqrtRatioAX96, uint160 _sqrtRatioBX96) 
-    internal 
+    uint160 _sqrtRatioAX96, uint160 _sqrtRatioBX96)  
     returns (uint _adjustedAmount0, uint _adjustedAmount1){
         
         uint128 _liquidityForAmounts = getLiquidityForAmounts(_sqrtRatioX96, _sqrtRatioAX96, _sqrtRatioBX96, _amount0, _amount1);
