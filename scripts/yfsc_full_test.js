@@ -291,25 +291,54 @@ async function main() {
   // var tickLower = await YfScContract.connect(signer2[0]).tickLower();
   // console.log("tickLower: ", tickLower);
 
-  // const tx02 = await YfScContract.connect(signer2[0]).updatPosition( 
-  //   UNI_ADDRESS, 
-  //   WETH_ADDRESS, 
-  //   "3000",  
-  //   "3",
-  //   "3",
-  //   { gasLimit: '2000000' } 
-  // ) 
-  // await tx02.wait() 
-  let _rebalance = false;
-  const tx40 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
+  const tx02 = await YfScContract.connect(signer2[0]).updatePosition( 
     UNI_ADDRESS, 
     WETH_ADDRESS, 
-    "3000", 
-    "100", 
-    _rebalance,
-    { gasLimit: '1000000' } 
+    "3000",  
+    "3",
+    "3",
+    { gasLimit: '2000000' } 
   ) 
-  await tx40.wait() 
+  await tx02.wait() 
+
+  const tx020 = await YfScContract.connect(signer2[0]).updatePosition( 
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000",  
+    "2",
+    "2",
+    { gasLimit: '2000000' } 
+  ) 
+  await tx020.wait() 
+
+  // "1", "3"
+  // public_amount0:          54825602439360n
+  // public_adjustedAmount0:  20394390011988n
+  // public_amount1:          9782374643473n
+  // public_adjustedAmount1:  20394390011988n
+
+  // "3","1"
+  // public_amount0:          54825592590950n
+  // public_adjustedAmount0:  54678335141826n
+  // public_amount1:          9782374774505n
+  // public_adjustedAmount1:  54678335141826n
+
+  // WETH_ADDRESS, UNI_ADDRESS, "3","1"
+  // public_amount0:          54149915626436n
+  // public_adjustedAmount0:  54028766991333n
+  // public_amount1:           9747365556930n
+  // public_adjustedAmount1:  54028766991333n
+
+  // let _rebalance = false;
+  // const tx40 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "100", 
+  //   _rebalance,
+  //   { gasLimit: '1000000' } 
+  // ) 
+  // await tx40.wait() 
 
 
   // const tx020 = await YfScContract.connect(signer2[0]).withdraw( 
@@ -398,6 +427,19 @@ async function main() {
 
   const public_userPreviousLiquidity = await YfScContract.connect(signer2[0]).public_userPreviousLiquidity();
   console.log("public_userPreviousLiquidity: ", public_userPreviousLiquidity);
+
+  const public_amount0 = await YfScContract.connect(signer2[0]).public_amount0();
+  console.log("public_amount0:         ", public_amount0);
+
+  const public_adjustedAmount0 = await YfScContract.connect(signer2[0]).public_adjustedAmount0();
+  console.log("public_adjustedAmount0: ", public_adjustedAmount0);
+
+  const public_amount1 = await YfScContract.connect(signer2[0]).public_amount1();
+  console.log("public_amount1:         ", public_amount1);
+
+  const public_adjustedAmount1 = await YfScContract.connect(signer2[0]).public_adjustedAmount1();
+  console.log("public_adjustedAmount1: ", public_adjustedAmount1);
+
 
   // for(var  ind = 0; ind <= parseInt(totalStatesForPosition1); ind++){
   //   console.log("position state id   : ", ind);
