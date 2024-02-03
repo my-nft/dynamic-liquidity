@@ -132,16 +132,16 @@ async function main() {
   )
   await tx0.wait()
 
-  const swapParams3 = {
-    tokenIn: UNI_ADDRESS,
-    tokenOut: WETH_ADDRESS,
-    fee: "3000",
-    recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
-    deadline: "92265983778560",
-    amountIn: "34234234234",
-    amountOutMinimum: "0",
-    sqrtPriceLimitX96: "0"
-  }
+  // const swapParams3 = {
+  //   tokenIn: UNI_ADDRESS,
+  //   tokenOut: WETH_ADDRESS,
+  //   fee: "3000",
+  //   recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
+  //   deadline: "92265983778560",
+  //   amountIn: "34234234234",
+  //   amountOutMinimum: "0",
+  //   sqrtPriceLimitX96: "0"
+  // }
 
   // await uniContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
 
@@ -153,6 +153,8 @@ async function main() {
   //       }
   //   );
   // await tx002.wait()
+  // 921758699482278
+  // 519594342036717
 
   await wethContract.connect(signer2[2]).approve(YfScContract.target, ethers.parseEther("1000"))
   await uniContract.connect(signer2[2]).approve(YfScContract.target, ethers.parseEther("1000"))
@@ -169,29 +171,29 @@ async function main() {
   )
   await tx110.wait()
 
-  const tx10 = await YfScContract.connect(signer2[1]).mintNFT(
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000", 
-    "92265983778560",
-    "10000000000000", 
-    "1",
-    "2",
-    { gasLimit: '2000000' }
-  )
-  await tx10.wait()
+  // const tx10 = await YfScContract.connect(signer2[1]).mintNFT(
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "92265983778560",
+  //   "10000000000000", 
+  //   "1",
+  //   "2",
+  //   { gasLimit: '2000000' }
+  // )
+  // await tx10.wait()
 
-  const tx100 = await YfScContract.connect(signer2[1]).mintNFT(
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "10000", 
-    "92265983778560",
-    "10000000000000", 
-    "1",
-    "2",
-    { gasLimit: '2000000' }
-  )
-  await tx100.wait()
+  // const tx100 = await YfScContract.connect(signer2[1]).mintNFT(
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "10000", 
+  //   "92265983778560",
+  //   "10000000000000", 
+  //   "1",
+  //   "2",
+  //   { gasLimit: '2000000' }
+  // )
+  // await tx100.wait()
 
   // await wethContract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"))
   // await uniContract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"))
@@ -221,16 +223,16 @@ async function main() {
   // )
   // await tx11.wait()
 
-  const swapParams = {
-    tokenIn: UNI_ADDRESS,
-    tokenOut: WETH_ADDRESS,
-    fee: "3000",
-    recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
-    deadline: "92265983778560",
-    amountIn: "34234234234",
-    amountOutMinimum: "0",
-    sqrtPriceLimitX96: "0"
-  }
+  // const swapParams = {
+  //   tokenIn: UNI_ADDRESS,
+  //   tokenOut: WETH_ADDRESS,
+  //   fee: "3000",
+  //   recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
+  //   deadline: "92265983778560",
+  //   amountIn: "34234234234",
+  //   amountOutMinimum: "0",
+  //   sqrtPriceLimitX96: "0"
+  // }
 
   // await uniContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
 
@@ -243,16 +245,16 @@ async function main() {
   //   );
   // await tx2.wait()
 
-  const swapParams2 = {
-    tokenOut: WETH_ADDRESS,
-    tokenIn: UNI_ADDRESS,
-    fee: "3000",
-    recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
-    deadline: "12265983778560",
-    amountIn: "14234234234",
-    amountOutMinimum: "0",
-    sqrtPriceLimitX96: "0"
-  }
+  // const swapParams2 = {
+  //   tokenOut: WETH_ADDRESS,
+  //   tokenIn: UNI_ADDRESS,
+  //   fee: "3000",
+  //   recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
+  //   deadline: "12265983778560",
+  //   amountIn: "14234234234",
+  //   amountOutMinimum: "0",
+  //   sqrtPriceLimitX96: "0"
+  // }
 
   // await wethContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
 
@@ -311,34 +313,49 @@ async function main() {
   ) 
   await tx020.wait() 
 
-  // "1", "3"
-  // public_amount0:          54825602439360n
-  // public_adjustedAmount0:  20394390011988n
-  // public_amount1:          9782374643473n
-  // public_adjustedAmount1:  20394390011988n
+  let _rebalance = false;
+  const tx40 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "100", 
+    _rebalance,
+    { gasLimit: '1000000' } 
+  ) 
+  await tx40.wait() 
 
-  // "3","1"
-  // public_amount0:          54825592590950n
-  // public_adjustedAmount0:  54678335141826n
-  // public_amount1:          9782374774505n
-  // public_adjustedAmount1:  54678335141826n
+  _rebalance = false;
+  const tx410 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "100", 
+    _rebalance,
+    { gasLimit: '1000000' } 
+  ) 
+  await tx410.wait() 
 
-  // WETH_ADDRESS, UNI_ADDRESS, "3","1"
-  // public_amount0:          54149915626436n
-  // public_adjustedAmount0:  54028766991333n
-  // public_amount1:           9747365556930n
-  // public_adjustedAmount1:  54028766991333n
+  const originalNftId = await YfScContract.originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
 
-  // let _rebalance = false;
-  // const tx40 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
-  //   UNI_ADDRESS, 
-  //   WETH_ADDRESS, 
-  //   "3000", 
-  //   "100", 
-  //   _rebalance,
-  //   { gasLimit: '1000000' } 
-  // ) 
-  // await tx40.wait() 
+  console.log("originalNftId: ", originalNftId);
+
+  const totalStatesForNft = await YfScContract.totalStatesForNft(originalNftId);
+
+  console.log("totalStatesForNft: ", totalStatesForNft);
+
+  for(var i = 1; i <= totalStatesForNft; i++){
+    var coef = await YfScContract.liquidityChangeCoef(originalNftId, i);
+    console.log("coef: ", coef);
+  }
+
+  const public_userLiquidity = await YfScContract.public_userLiquidity();
+
+  console.log("public_userLiquidity: ", public_userLiquidity);
+  
+  const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+
+  console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
+
 
 
   // const tx020 = await YfScContract.connect(signer2[0]).withdraw( 
@@ -352,115 +369,6 @@ async function main() {
   //   { gasLimit: '200000' } 
   // ) 
   // await tx0200.wait() 
-
-  const uniNftId = await YfScContract.connect(signer2[0]).poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
-  console.log("uniNftId: ", uniNftId);
-  const positionNftId1 = await PositionsNFTContract.connect(signer2[1]).getUserNftPerPool("0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0", uniNftId)
-  const positionNftId2 = await PositionsNFTContract.connect(signer2[2]).getUserNftPerPool("0x72DDbDc341BBFc00Fe4F3f49695532841965bF0E", uniNftId)
-  console.log("positionNftId1: ", positionNftId1);
-  console.log("positionNftId2: ", positionNftId2);
-  const totalStatesForPosition1 = await PositionsNFTContract.connect(signer2[1]).totalStatesForPosition(positionNftId1)
-  const totalStatesForPosition2 = await PositionsNFTContract.connect(signer2[2]).totalStatesForPosition(positionNftId2)
-  console.log("totalStatesForPosition1: ", totalStatesForPosition1);
-  console.log("totalStatesForPosition2: ", totalStatesForPosition2);
-  console.log("");
-  console.log("liquidity for position ------> ", positionNftId1)
-
-  const public_poolNftId = await YfScContract.connect(signer2[0]).public_poolNftId()
-  console.log("public_poolNftId        : ", public_poolNftId);
-  const public_liquidityToRemove = await YfScContract.connect(signer2[0]).public_liquidityToRemove()
-  console.log("public_liquidityToRemove: ", public_liquidityToRemove);
-
-  // const public_lastLiquidityUpdateStateForPosition = await YfScContract.connect(signer2[0]).public_lastLiquidityUpdateStateForPosition()
-  // console.log("public_lastLiquidityUpdateStateForPosition        : ", public_lastLiquidityUpdateStateForPosition);
-  // const public_userPositionLastUpdateState = await YfScContract.connect(signer2[0]).public_userPositionLastUpdateState()
-  // console.log("public_userPositionLastUpdateState: ", public_userPositionLastUpdateState);
-
-  // const public_timestamp = await YfScContract.connect(signer2[0]).public_timestamp();
-  // console.log("public_timestamp: ", public_timestamp);
-
-  // const liquidityLockTime = await YfScContract.connect(signer2[0]).liquidityLockTime();
-  // console.log("liquidityLockTime: ", liquidityLockTime);
-
-  // const liquidityLastDepositTime0 = await YfScContract.connect(signer2[0]).liquidityLastDepositTime(0);
-  // console.log("liquidityLastDepositTime0: ", liquidityLastDepositTime0);
-
-
-  // const liquidityLastDepositTime1 = await YfScContract.connect(signer2[0]).liquidityLastDepositTime(1);
-  // console.log("liquidityLastDepositTime1: ", liquidityLastDepositTime1);
-
-  const rebalance = await YfScContract.connect(signer2[0]).public_rebalance();
-  console.log("rebalance: ", rebalance);
-
-  const public_userAddedLiquidity = await YfScContract.connect(signer2[0]).public_userAddedLiquidity();
-  console.log("public_userAddedLiquidity: ", public_userAddedLiquidity);
-  
-  const public_totalCollected0 = await YfScContract.connect(signer2[0]).public_totalCollected0();
-  console.log("public_totalCollected0: ", public_totalCollected0);
-
-  const public_totalCollected1 = await YfScContract.connect(signer2[0]).public_totalCollected1();
-  console.log("public_totalCollected1: ", public_totalCollected1);
-
-  const public_totalPendingRewards0 = await YfScContract.connect(signer2[0]).public_totalPendingRewards0();
-  console.log("public_totalPendingRewards0: ", public_totalPendingRewards0);
-
-  const public_totalPendingRewards1 = await YfScContract.connect(signer2[0]).public_totalPendingRewards1();
-  console.log("public_totalPendingRewards1: ", public_totalPendingRewards1);
-
-  const public_positionRewardToken0 = await YfScContract.connect(signer2[0]).public_positionRewardToken0();
-  console.log("public_positionRewardToken0: ", public_positionRewardToken0);
-
-  const public_positionRewardToken1 = await YfScContract.connect(signer2[0]).public_positionRewardToken1();
-  console.log("public_positionRewardToken1: ", public_positionRewardToken1);
-
-  const public_maxStateIdForNFT = await YfScContract.connect(signer2[0]).public_maxStateIdForNFT();
-  console.log("public_maxStateIdForNFT: ", public_maxStateIdForNFT);
-
-  const public_statesCounter = await YfScContract.connect(signer2[0]).public_statesCounter();
-  console.log("public_statesCounter: ", public_statesCounter);
-
-  const public_previousLiquidity = await YfScContract.connect(signer2[0]).public_previousLiquidity();
-  console.log("public_previousLiquidity: ", public_previousLiquidity);
-
-  const public_newLiquidity = await YfScContract.connect(signer2[0]).public_newLiquidity();
-  console.log("public_newLiquidity: ", public_newLiquidity);
-
-  const public_userPreviousLiquidity = await YfScContract.connect(signer2[0]).public_userPreviousLiquidity();
-  console.log("public_userPreviousLiquidity: ", public_userPreviousLiquidity);
-
-  const public_amount0 = await YfScContract.connect(signer2[0]).public_amount0();
-  console.log("public_amount0:         ", public_amount0);
-
-  const public_adjustedAmount0 = await YfScContract.connect(signer2[0]).public_adjustedAmount0();
-  console.log("public_adjustedAmount0: ", public_adjustedAmount0);
-
-  const public_amount1 = await YfScContract.connect(signer2[0]).public_amount1();
-  console.log("public_amount1:         ", public_amount1);
-
-  const public_adjustedAmount1 = await YfScContract.connect(signer2[0]).public_adjustedAmount1();
-  console.log("public_adjustedAmount1: ", public_adjustedAmount1);
-
-
-  // for(var  ind = 0; ind <= parseInt(totalStatesForPosition1); ind++){
-  //   console.log("position state id   : ", ind);
-  //   var stateIdForPosition = await PositionsNFTContract.connect(signer2[1]).statesIdsForPosition(positionNftId1, ind);
-  //   console.log("global state id     : ", stateIdForPosition);
-  //   var liquidityAtState = await PositionsNFTContract.connect(signer2[1]).liquidityForUserInPoolAtState(positionNftId1, stateIdForPosition);
-  //   console.log("liquidityAtState    : ", liquidityAtState);
-  //   // var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
-  //   // console.log("poolLiquidityAtState: ", poolLiquidityAtState);
-  // }
-  // console.log("");
-  // console.log("liquidity for position ------> ", positionNftId2)
-  // for(var  ind = 0; ind <= parseInt(totalStatesForPosition2); ind++){
-  //   console.log("position state id   : ", ind);
-  //   var stateIdForPosition = await PositionsNFTContract.connect(signer2[2]).statesIdsForPosition(positionNftId2, ind);
-  //   console.log("global state id     : ", stateIdForPosition);
-  //   var liquidityAtState = await PositionsNFTContract.connect(signer2[2]).liquidityForUserInPoolAtState(positionNftId2, stateIdForPosition);
-  //   console.log("liquidityAtState    : ", liquidityAtState);
-  //   // var poolLiquidityAtState = await YfScContract.connect(signer2[0]).getTotalLiquidityAtStateForPosition(uniNftId, stateIdForPosition);
-  //   // console.log("poolLiquidityAtState: ", poolLiquidityAtState);
-  // }
 }
 
 /*

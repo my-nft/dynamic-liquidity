@@ -492,8 +492,8 @@ contract YfSc{
        
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
-
-        uint oldStateCounter = statesCounter;
+        
+        // if(statesCounter == 5) return;
         
         // before updating the position, we first claim all the pending rewards for both tokens
         collect(_token0, _token1, _fee, 0, 0, true);
