@@ -10,11 +10,13 @@ MINTER_ROLE = "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a
 const artifacts = {
   NonfungiblePositionManager: require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json"),
   WETH: require("../artifacts/contracts/WETH9.sol/WETH9.json"),
-  UNI: require("../artifacts/contracts/yfsc.sol/Token.json"),
+  UNI: require("../artifacts/contracts/utils.sol/Token.json"),
   YfSc: require("../artifacts/contracts/yfsc.sol/YfSc.json"),
-  PositionsNFT: require("../artifacts/contracts/yfsc.sol/PositionsNFT.json"),
+  PositionsNFT: require("../artifacts/contracts/positionNFT.sol/PositionsNFT.json"),
   SwapRouter: require("../artifacts/contracts/ISwapRouter.sol/ISwapRouter.json"),
   UniswapV3Pool: require("../artifacts/contracts/IUniswapV3Pool.sol/IUniswapV3Pool.json"),
+  Utils: require("../artifacts/contracts/utils.sol/Utils.json"),
+
 };
 
 // const { ethers } = require("hardhat")
@@ -43,8 +45,12 @@ async function main() {
   PositionsNFTContract = new ContractFactory(artifacts.PositionsNFT.abi, artifacts.PositionsNFT.bytecode, signer2[0]);
   PositionsNFTContract = await PositionsNFTContract.deploy();
 
+  let UtilsContract = new ContractFactory(artifacts.Utils.abi, artifacts.Utils.bytecode, signer2[0]);
+  UtilsContract = await UtilsContract.deploy(POSITION_MANAGER_ADDRESS);
+
+
   let YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2[0]);
-  YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, ISWAP_ROUTER);
+  YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, ISWAP_ROUTER, UtilsContract.target);
 
   // TokenContract = new ContractFactory(artifacts.Token.abi, artifacts.Token.bytecode, signer2[0]);
   // TokenContract = await YfScContract.deploy("Test Token", "TT");
@@ -56,6 +62,20 @@ async function main() {
     { gasLimit: '1000000' }
   )
   await tx.wait()
+
+
+  
+
+  const tx001 = await YfScContract.connect(signer2[0]).setInitialTicksForPool(
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "1",
+    "2",
+    { gasLimit: '1000000' }
+  )
+  await tx001.wait()
+ 
 
   console.log("YfScContract address: ", YfScContract.target);
   console.log("PositionsNFTContract address: ", PositionsNFTContract.target);
@@ -126,8 +146,8 @@ async function main() {
     "3000", 
     "5351019098278",
     "1000000000000", 
-    "1",
-    "2",
+    // "1",
+    // "2",
     { gasLimit: '2000000' }
   )
   await tx0.wait()
@@ -165,8 +185,8 @@ async function main() {
     "3000", 
     "7351019098278",
     "2000000000000", 
-    "1",
-    "2",
+    // "1",
+    // "2",
     { gasLimit: '2000000' }
   )
   await tx110.wait()
@@ -303,6 +323,24 @@ async function main() {
   ) 
   await tx02.wait() 
 
+  const public_amount0 = await YfScContract.public_amount0();
+  console.log("public_amount0        : ", public_amount0);
+  const public_balance0 = await YfScContract.public_balance0();
+  console.log("public_balance0       : ", public_balance0);
+
+  const public_adjustedAmount0 = await YfScContract.public_adjustedAmount0();
+  console.log("public_adjustedAmount0: ", public_adjustedAmount0);
+
+  const public_amount1 = await YfScContract.public_amount1();
+  console.log("public_amount1        : ", public_amount1);
+  const public_balance1 = await YfScContract.public_balance1();
+  console.log("public_balance1       : ", public_balance1);
+
+  const public_adjustedAmount1 = await YfScContract.public_adjustedAmount1();
+  console.log("public_adjustedAmount1: ", public_adjustedAmount1);
+
+  
+
   const tx020 = await YfScContract.connect(signer2[0]).updatePosition( 
     UNI_ADDRESS, 
     WETH_ADDRESS, 
@@ -312,6 +350,8 @@ async function main() {
     { gasLimit: '2000000' } 
   ) 
   await tx020.wait() 
+
+
 
   let _rebalance = false;
   const tx40 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
@@ -335,6 +375,28 @@ async function main() {
   ) 
   await tx410.wait() 
 
+  // _rebalance = false;
+  // const tx409 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "100", 
+  //   _rebalance,
+  //   { gasLimit: '1000000' } 
+  // ) 
+  // await tx409.wait() 
+
+  // _rebalance = false;
+  // const tx4109 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "100", 
+  //   _rebalance,
+  //   { gasLimit: '1000000' } 
+  // ) 
+  // await tx4109.wait() 
+
   const originalNftId = await YfScContract.originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
 
   console.log("originalNftId: ", originalNftId);
@@ -350,13 +412,24 @@ async function main() {
 
   const public_userLiquidity = await YfScContract.public_userLiquidity();
 
-  console.log("public_userLiquidity: ", public_userLiquidity);
+  console.log("public_userLiquidity         : ", public_userLiquidity);
   
   const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
 
   console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
 
 
+  // const public_amount0 = await YfScContract.public_amount0();
+  // console.log("public_amount0        : ", public_amount0);
+
+  // const public_adjustedAmount0 = await YfScContract.public_adjustedAmount0();
+  // console.log("public_adjustedAmount0: ", public_adjustedAmount0);
+
+  // const public_amount1 = await YfScContract.public_amount1();
+  // console.log("public_amount1        : ", public_amount1);
+
+  // const public_adjustedAmount1 = await YfScContract.public_adjustedAmount1();
+  // console.log("public_adjustedAmount1: ", public_adjustedAmount1);
 
   // const tx020 = await YfScContract.connect(signer2[0]).withdraw( 
   //   UNI_ADDRESS, 

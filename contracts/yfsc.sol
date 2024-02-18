@@ -5,284 +5,7 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-
-// import {PRBMathUD60x18} from "@prb/math/contracts/PRBMathUD60x18.sol";
-
-// import "prb-math/contracts/PRBMathUD60x18.sol";
-
-import './FullMath.sol';
-import './FixedPoint96.sol';
-import './TickMath.sol';
-import './ISwapRouter.sol';
-import {SafeCast} from './SafeCast.sol';
-import {UnsafeMath} from './UnsafeMath.sol';
-
-struct IncreaseLiquidityParams {
-    uint256 tokenId;
-    uint256 amount0Desired;
-    uint256 amount1Desired;
-    uint256 amount0Min;
-    uint256 amount1Min;
-    uint256 deadline;
-}
-
-struct MintParams {
-    address token0;
-    address token1; 
-    uint24 fee;
-    int24 tickLower; 
-    int24 tickUpper; 
-    uint256 amount0;
-    uint256 amount1; 
-    uint256 amount0Min; 
-    uint256 amount1Min; 
-    address receiver; 
-    uint256 deadline;
-}
-
-struct DecreaseLiquidityParams {
-    uint256 tokenId;
-    uint128 liquidity;
-    uint256 amount0Min;
-    uint256 amount1Min;
-    uint256 deadline;
-}
-
-struct CollectParams {
-    uint256 tokenId;
-    address recipient;
-    uint128 amount0Max;
-    uint128 amount1Max;
-}
-
-struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-contract Token is ERC20 ("Test Token", "TT"){
-
-}
-contract PositionsNFT is ERC721, AccessControl {
-    using Counters for Counters.Counter;
-
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    Counters.Counter private _tokenIdCounter;
-
-    mapping(address => mapping(uint=>uint)) public userNftPerPool;
-
-    mapping(uint=>mapping(uint=>uint128)) public liquidityForUserInPoolAtState; // nft --> state --> liquidity 
-    mapping(uint=>mapping(uint=>uint128)) public userShareInPoolAtState; // nft --> state --> liquidity 
-    
-    mapping(uint => mapping(uint => uint)) public statesIdsForPosition;
-
-    mapping(uint => uint) public totalStatesForPosition;
-
-    mapping(uint => uint) public lastClaimForPosition;
-
-    mapping(uint => uint) public totalClaimedforPositionToken0;
-    mapping(uint => uint) public totalClaimedforPositionToken1;
-
-    constructor() ERC721("Yf Sc Positions NFT", "YSP_NFT") {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _tokenIdCounter.increment(); // to start from 1
-    }
-
-
-    function safeMint(uint _uniswapNftId, address _receiver, uint128 _liquidity, uint _state) public onlyRole(MINTER_ROLE) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        _safeMint(_receiver, tokenId);
-        userNftPerPool[_receiver][_uniswapNftId] = tokenId;   
-    }
-
-    function getUserNftPerPool(address receiver, uint uniswapNftId) view public returns (uint) {
-        return userNftPerPool[receiver][uniswapNftId];
-    }
-
-    function updateLiquidityForUser(uint positionNftId, uint128 _liquidity, uint _state)public onlyRole(MINTER_ROLE) {
-        liquidityForUserInPoolAtState[positionNftId][_state] = _liquidity;
-
-        statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;   
-    }
-
-    function updateStatesIdsForPosition(uint positionNftId, uint _state)public onlyRole(MINTER_ROLE) {
-        totalStatesForPosition[positionNftId]++;
-        statesIdsForPosition[positionNftId][totalStatesForPosition[positionNftId]] = _state;
-    }
-
-    function updateLastClaimForPosition(uint _positionNftId, uint _state)public onlyRole(MINTER_ROLE) {
-        lastClaimForPosition[_positionNftId] = _state;
-    }
-
-    function updateTotalClaimForPosition(uint _positionNftId, uint _newClaim0, uint _newClaim1)public onlyRole(MINTER_ROLE) {
-        totalClaimedforPositionToken0[_positionNftId] += _newClaim0;
-        totalClaimedforPositionToken1[_positionNftId] += _newClaim1;
-    }
-
-    function getLiquidityForUserInPoolAtState(uint _userPositionNft, uint _state) public view returns(uint128 liquidity){
-        // we need to handle the case update liquidity
-        uint _totalStateIdsForPosition = totalStatesForPosition[_userPositionNft];
-        if(_state >= statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition]) {
-            uint stateId = statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition];
-            return liquidityForUserInPoolAtState[_userPositionNft][stateId];
-        }else{
-            for(uint i = _state ; i > 0; i--){
-                if (statesIdsForPosition[_userPositionNft][i] <= _state){
-                    return liquidityForUserInPoolAtState[_userPositionNft][statesIdsForPosition[_userPositionNft][i]];
-                }
-            }
-        }
-        return 0;
-    }
-
-    function getUserShareInPoolAtState(uint _userPositionNft, uint _state) public view returns(uint128 liquidity){
-        // we need to handle the case update liquidity
-        uint _totalStateIdsForPosition = totalStatesForPosition[_userPositionNft];
-        if(_state >= statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition]) {
-            uint stateId = statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition];
-            return userShareInPoolAtState[_userPositionNft][stateId];
-        }else{
-            for(uint i = _state ; i > 0; i--){
-                if (statesIdsForPosition[_userPositionNft][i] <= _state){
-                    return userShareInPoolAtState[_userPositionNft][statesIdsForPosition[_userPositionNft][i]];
-                }
-            }
-        }
-        return 0;
-    }
-
-    function getStatesIdsForPosition(uint _userPositionNft, uint _stateId) public view returns(uint id){
-        id = statesIdsForPosition[_userPositionNft][_stateId];
-        return id;
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
-        internal
-        override
-    {
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
-    }
-
-    // The following functions are overrides required by Solidity.
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, AccessControl)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
-}
-
-contract NonfungiblePositionManager {
-
-    address public factory;
-
-    function mint(MintParams calldata params)
-        external
-        payable
-        // override
-        // checkDeadline(params.deadline)
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        ){}
-    
-    function increaseLiquidity(IncreaseLiquidityParams calldata params)
-        external
-        payable
-        // override
-        // checkDeadline(params.deadline)
-        returns (
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        ){}
-
-    function decreaseLiquidity(DecreaseLiquidityParams calldata params)
-        external
-        payable
-        // override
-        // isAuthorizedForToken(params.tokenId)
-        // checkDeadline(params.deadline)
-        returns (uint256 amount0, uint256 amount1){}
-
-    function collect(CollectParams calldata params)
-        external
-        payable
-        // override
-        // isAuthorizedForToken(params.tokenId)
-        returns (uint256 amount0, uint256 amount1){}
-
-
-    function positions(uint256 tokenId)
-        external
-        view
-        // override
-        returns (
-            uint96 nonce,
-            address operator,
-            address token0,
-            address token1,
-            uint24 fee,
-            int24 tickLower,
-            int24 tickUpper,
-            uint128 liquidity,
-            uint256 feeGrowthInside0LastX128,
-            uint256 feeGrowthInside1LastX128,
-            uint128 tokensOwed0,
-            uint128 tokensOwed1
-        )
-    {}
-}
-
-contract Factory {
-
-    // mapping(address => mapping(address => mapping(uint24 => address))) public  getPool;
-    function getPool(address _token0, address _token1, uint24 _fee) public returns (address) {}
-}
-
-contract Pool {
-        struct Slot0 {
-        // the current price
-        uint160 sqrtPriceX96;
-        // the current tick
-        int24 tick;
-        // the most-recently updated index of the observations array
-        uint16 observationIndex;
-        // the current maximum number of observations that are being stored
-        uint16 observationCardinality;
-        // the next maximum number of observations to store, triggered in observations.write
-        uint16 observationCardinalityNext;
-        // the current protocol fee as a percentage of the swap fee taken on withdrawal
-        // represented as an integer denominator (1/x)%
-        uint8 feeProtocol;
-        // whether the pool is locked
-        bool unlocked;
-    }
-    
-    Slot0 public slot0;
-
-    int24 public tickSpacing;
-}
+import './positionNFT.sol';
 
 /// @title YF SC : dynamic liquidity for uniswap V3
 /// @author zak_ch
@@ -320,12 +43,8 @@ contract YfSc{
     int24 public tickUpper;
     // deadline for transactions to be validated, otherwise reject
     uint public deadline = 600; 
-    uint private slippageToken0 = 500; // => 5 % 
-    uint private slippageToken1 = 500; // => 5 % 
-    // quotitnt for slippage calculation
-    uint private quotient = 10000; 
     // big number used to collect all the rewards from the pool in a given transaction 
-    uint128 private max_collect = 1e27; 
+    // uint128 private max_collect = 1e27; 
     uint public liquidityLockTime = 0; //3600 * 24 * 30; // one month liquidty lock time 
     // track last deposit time for each user position, to be able to enforce the lock time 
     mapping(uint => uint) public liquidityLastDepositTime; // position nft => timestamp 
@@ -333,6 +52,7 @@ contract YfSc{
     PositionsNFT private positionsNFT; 
     // Uniswap v3 position manager
     NonfungiblePositionManager private nonfungiblePositionManager; 
+    Utils private utils; 
     // Uniswap v3 router for internal swaps
     ISwapRouter private iSwapRouter;
     // IQuoter public quoter;
@@ -343,14 +63,24 @@ contract YfSc{
     mapping(address => uint) public totalRewards; 
     uint128 immutable public changeDenom = 1000000;
     mapping(uint => mapping(uint => uint)) public poolUpdateStateId; // pool => state id => global state id 
-    // mapping(uint => uint) public totalStatesForNft;
 
     mapping(uint => mapping(uint => uint)) public liquidityChangeCoef; // pool nft => state => coef /10000 to track liquidity amount change durint rebalance in a given state
     // uint128 public changeCoef;
-    uint public precision = 100000000;
+
+    mapping(address => mapping(address => mapping(uint => int24))) public ticksUp; // 
+    mapping(address => mapping(address => mapping(uint => int24))) public ticksDown; // 
 
     uint128 public public_userLiquidity;
     uint128 public public_userLiquidityCorrected;
+
+    uint public public_amount0;
+    uint public public_amount1;
+
+    uint public public_balance0;
+    uint public public_balance1;
+
+    uint public public_adjustedAmount0;
+    uint public public_adjustedAmount1;
 
     /**
      * Contract initialization.
@@ -358,14 +88,15 @@ contract YfSc{
 
     /// @notice Deploys the smart 
     /// @dev Assigns `msg.sender` to the owner state variable
-    constructor(PositionsNFT _positionsNFT, NonfungiblePositionManager _nonfungiblePositionManager, ISwapRouter _iSwapRouter) {
+    constructor(PositionsNFT _positionsNFT, 
+    NonfungiblePositionManager _nonfungiblePositionManager, 
+    ISwapRouter _iSwapRouter,
+    Utils _utils) {
         positionsNFT = _positionsNFT;
         nonfungiblePositionManager = _nonfungiblePositionManager;
         iSwapRouter = _iSwapRouter;
         owner = msg.sender;
- 
-        tickLower = -24000;
-        tickUpper = -23040;
+        utils = _utils;
     }
 
     // Modifier to check that the caller is the owner of
@@ -378,9 +109,6 @@ contract YfSc{
         _;
     }
 
-    function toUint128(uint256 x) private pure returns (uint128 y) {
-        require((y = uint128(x)) == x);
-    }
 
     /// @notice external method 
     /// Allow to fixe the ticks for liquidity create/update operations 
@@ -390,16 +118,22 @@ contract YfSc{
     /// @param _tickLower lower price range tick
     /// @param _tickUpper upper roce range tick
     function setTicks(int24 _tickLower, int24 _tickUpper) internal {
-        uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower);
-        uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper);
         tickLower = _tickLower;
         tickUpper = _tickUpper;
     }
+    
 
     function withdraw(address _token) public onlyOwner{
         ERC20 token = ERC20(_token);
         uint _balance = token.balanceOf(address(this));
         token.transfer(msg.sender, _balance);
+    }
+
+    function setInitialTicksForPool(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) public onlyOwner {
+        ticksUp[_token0][_token1][_fee] == _ticksUp;
+        ticksDown[_token0][_token1][_fee] == _ticksDown;
+        ticksUp[_token1][_token0][_fee] == _ticksUp;
+        ticksDown[_token1][_token0][_fee] == _ticksDown;
     }
 
     function setRates(address _token0, address _token1, uint24 _fee, int24 _ticksUp, int24 _ticksDown) internal  {
@@ -409,7 +143,7 @@ contract YfSc{
         Pool pool = Pool(_poolAddress);
         (, int24 tick, , , , , ) = pool.slot0();
         int24 tickSpacing = pool.tickSpacing();
-        int24 tickFloor = _floor(tick, tickSpacing);
+        int24 tickFloor = utils._floor(tick, tickSpacing);
         int24 tickCeil = tickFloor + tickSpacing;
         setTicks(tickFloor - _ticksDown * tickSpacing, tickCeil + _ticksUp * tickSpacing);
     }
@@ -433,11 +167,7 @@ contract YfSc{
         return 0;
     }
 
-    /// @notice external method 
-    /// Allow o update the lock time for liquidity. 
-    /// The counter is initialised for a given user in each deposit
-    /// @dev external method to be called only by the owner 
-    /// @param _liquidityLockTime new lock time in seconds
+
     function setLockTime(uint _liquidityLockTime) external onlyOwner{
         liquidityLockTime = _liquidityLockTime;
     }
@@ -451,33 +181,13 @@ contract YfSc{
         int24 tick;
         (sqrtPriceX96, tick, , , , , ) = pool.slot0();
         sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
+
+
+        setRates( _token0,  _token1,  _fee, ticksUp[_token0][_token1][_fee], ticksDown[_token0][_token1][_fee]);
+
         sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(tickLower);
         sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(tickUpper);
         return (sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, sqrtPriceX96);
-    }
-
-    function liquidityAmounts(
-    uint _amount0, uint _amount1, 
-    uint160 _sqrtRatioX96, uint160 _sqrtPriceX96, 
-    uint160 _sqrtRatioAX96, uint160 _sqrtRatioBX96) 
-    internal 
-    returns (uint _adjustedAmount0, uint _adjustedAmount1){
-        
-        uint128 _liquidityForAmounts = getLiquidityForAmounts(_sqrtRatioX96, _sqrtRatioAX96, _sqrtRatioBX96, _amount0, _amount1);
-
-        _adjustedAmount0 = getAmount0Delta(
-                    _sqrtPriceX96,
-                    _sqrtRatioBX96,
-                    _liquidityForAmounts,
-                    false
-                );
-        _adjustedAmount1 = getAmount1Delta(
-                    _sqrtRatioAX96,
-                    _sqrtPriceX96,
-                    _liquidityForAmounts,
-                    false
-                );
-        return (_adjustedAmount0, _adjustedAmount1);
     }
 
     /// @notice external function 
@@ -492,49 +202,77 @@ contract YfSc{
        
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1);
-        
-        // if(statesCounter == 5) return;
+
+        ticksUp[_token0][_token1][_fee] = _ticksUp;
+        ticksDown[_token0][_token1][_fee] = _ticksDown;
+        ticksUp[_token1][_token0][_fee] = _ticksUp;
+        ticksDown[_token1][_token0][_fee] = _ticksDown;
         
         // before updating the position, we first claim all the pending rewards for both tokens
         collect(_token0, _token1, _fee, 0, 0, true);
-
-        (,,,,,,,uint128 _liquidityBefore,,,, ) = nonfungiblePositionManager.positions(poolNftIds[_token0][_token1][_fee]);
-
+ 
         // decrease 100% of the liquidity. 'true' to indicate that it's a rebalance
         (uint _amount0, uint _amount1) = decreaseLiquidity(_token0, _token1, _fee, 100, true);
         
         // reset the nft id for the pool to be able to store the new nft id that will be minted 
         poolNftIds[_token0][_token1][_fee] = 0;
 
-        // apply the slippage params 
-        uint _amount0Min = 0 ; 
-        uint _amount1Min = 0 ; 
-
         setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
         
         (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
 
-        (uint _adjustedAmount0, uint _adjustedAmount1) = liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+        (uint _adjustedAmount0, uint _adjustedAmount1) = utils.liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
 
-        if(_adjustedAmount1 > _amount1 || _adjustedAmount0 > _amount0){                            
-            (_adjustedAmount0, _adjustedAmount1) = liquidityAmounts(90*_amount0/100, 90*_amount1/100, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+        // public_userLiquidity = (uint128)(_adjustedAmount0);
+        // public_userLiquidityCorrected = (uint128)(_adjustedAmount1);
+        // 3053665353593n
+        // 2776373951257
+        //    15864375289253
+
+        // 393739527797n
+        // 393639334853
+        //    1707183512335
+        // if (statesCounter == 4) return;
+        // uint ratio = _adjustedAmount0/_adjustedAmount1;
+        uint _adjustedAmount0_swaped;
+        uint _adjustedAmount1_swaped;
+        public_amount0 = _amount0;
+        public_amount1 = _amount1;
+        if (_adjustedAmount0 < 99*_amount0/100){ // 95% to make sure it s excess, and not tick rounding math
+            _adjustedAmount1_swaped += swapExess(_token0, _token1, _fee, 1*(_amount0 - _adjustedAmount0)/2);
+            // _adjustedAmount0 = _adjustedAmount0 - (_amount0 - _adjustedAmount0)/2;
+            _amount0 -= (_amount0 - _adjustedAmount0)/2;
+            _amount1 += _adjustedAmount1_swaped;
+        } else if (_adjustedAmount1 < 99*_amount1/100){
+            _adjustedAmount0_swaped += swapExess(_token1, _token0, _fee, 1*(_amount1 - _adjustedAmount1)/2) ;
+            // _adjustedAmount1 = (_adjustedAmount1 + _adjustedAmount1_swaped) - (_amount1 - _adjustedAmount1)/2;
+            _amount1 -= (_amount1 - _adjustedAmount1)/2;
+            _amount0 += _adjustedAmount0_swaped;
         }
 
-        if (_adjustedAmount0 < 95*_amount0/100){ // 95% to make sure it s excess, and not tick rounding math
-            _adjustedAmount1 += swapExess(_token1, _token0, _fee, (_amount0 - _adjustedAmount0)/2);
-            _adjustedAmount0 = _adjustedAmount0 + (_amount0 - _adjustedAmount0)/2;
+        public_balance0 = token0.balanceOf(address(this));
+        public_balance1 = token1.balanceOf(address(this));
 
-        }else if (_adjustedAmount1 < 95*_amount1/100){
-            _adjustedAmount0 += swapExess(_token1, _token0, _fee,(_amount1 - _adjustedAmount1)/2) ;
-            _adjustedAmount1 = _adjustedAmount1 + (_amount1 - _adjustedAmount1)/2;
-        }
+        // regulate tp precedent ratio
+        // suppose _adjustedAMount0 > _adjustedAmount1 all the time 
+
+        // uint ratio = _adjustedAmount0/_adjustedAmount1;
+
+        // if _amount1 > ratio * _amount0 {
+
+        // }
+        (sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
+
+        (_adjustedAmount0, _adjustedAmount1) = utils.liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+
+
+        public_adjustedAmount0 = _adjustedAmount0;
+        public_adjustedAmount1 = _adjustedAmount1;
 
         token0.approve(address(nonfungiblePositionManager), _adjustedAmount0);
         token1.approve(address(nonfungiblePositionManager), _adjustedAmount1);
-        uint _balance0 = token0.balanceOf(address(this));
-        uint _balance1 = token1.balanceOf(address(this));
-
-        uint128 _newLiquidity = mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, _amount0Min, _amount1Min, true);
+        
+        mintUni3Nft(_token0, _token1, _fee, tickLower, tickUpper, _adjustedAmount0, _adjustedAmount1, 0, 0, true);
         
         (,,,,,,,uint128 _liquidityAfter,,,, ) = nonfungiblePositionManager.positions(poolNftIds[_token0][_token1][_fee]);
         
@@ -545,7 +283,6 @@ contract YfSc{
         
         updateStateCounters(_originalNftId, 0);
         updateLiquidityVariables(_originalNftId, _liquidityAfter, true);
-
     }
 
     function getChangeCoefSinceLastUserUpdate(uint _originalNftId, uint _userNftId) public returns(uint128){
@@ -618,11 +355,8 @@ contract YfSc{
         uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
         uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition-1);
         uint128 _userLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, userPositionLastUpdateState);
-        // uint128 _userLiq = positionsNFT.getLiquidityForUserInPoolAtState(_userNftId, statesCounter - 1);
         uint128 _userLiqCorrected = (_userLiq * _changeCoefForLastLiquidity) / changeDenom;
-        public_userLiquidity = _changeCoefForLastLiquidity;
-        public_userLiquidityCorrected = _userLiqCorrected;
-
+  
         if(_previousLiqCorrected > _newLiquidity){
             positionsNFT.updateLiquidityForUser(_userNftId, 
             _userLiqCorrected - (_previousLiqCorrected - _newLiquidity), 
@@ -665,10 +399,6 @@ contract YfSc{
         positionsNFT.updateTotalClaimForPosition(_positionNftId, _claimAmount0, _claimAmount1);
     }
 
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a <= b ? a : b;
-    }
-
     function mintUni3Nft(
                             address _token0, 
                             address _token1, 
@@ -681,7 +411,7 @@ contract YfSc{
                             uint _amount1Min,
                             bool _rebalance
                         ) internal returns(uint128 liquidity){
-
+        
         MintParams memory mintParams;
         mintParams = MintParams(
                     _token0, 
@@ -710,6 +440,7 @@ contract YfSc{
         poolNftIds[_token0][_token1][_fee] = tokenId;
         poolNftIds[_token1][_token0][_fee] = tokenId;
         if (! _rebalance){
+            
             positionsNFT.safeMint(tokenId, msg.sender, _liquidity, statesCounter);
         }
         
@@ -789,17 +520,18 @@ contract YfSc{
     address _token1, 
     uint24 _fee, 
     uint _amount0,
-    uint _amount1,
-    int24 _ticksUp,
-    int24 _ticksDown
+    uint _amount1
+    // int24 _ticksUp,
+    // int24 _ticksDown
     ) public {
         ERC20 token0 = ERC20(_token0);
         ERC20 token1 = ERC20(_token1); 
-        setRates(_token0, _token1, _fee, _ticksUp, _ticksDown);
+
+        // require(ticksUp[_token0][_token1][_fee] > 0, "pool not initialized yet");
 
         (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sqrtRatios(_token0, _token1, _fee);
 
-        (_amount0, _amount1) = liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
+        (_amount0, _amount1) = utils.liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
 
         token0.transferFrom(msg.sender, address(this), _amount0);
         token1.transferFrom(msg.sender, address(this), _amount1);
@@ -820,11 +552,7 @@ contract YfSc{
             updateStateCounters(_originalNftId, _userNftId);
             updateLiquidityVariables(_originalNftId, _newLiquidity, false);
         }else{
-            uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];
-            uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
 
-            // updateStateCounters(_originalNftId, _userNftId); // not correct, what if no nft id so far ? 
-            
             collect(_token0, _token1, _fee, 0, 0, false);
             _newLiquidity = increaseUni3Nft(_token0, _token1, _fee, _amount0, _amount1, _amount0Min, _amount1Min);
         }  
@@ -832,7 +560,6 @@ contract YfSc{
 
     function swapExess(address _token0, address _token1, uint24 _fee, uint half) internal returns (uint){
         ERC20 token0 = ERC20(_token0);
-        ERC20 token1 = ERC20(_token1); 
         ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
         _exactInputSingleParams = ISwapRouter.ExactInputSingleParams(
             _token0, 
@@ -859,11 +586,13 @@ contract YfSc{
     /// @param _purcentage desired % of the users liquidity to be removed
     /// @param _rebalance always set to true for external calls, it is set to false only internally
     function decreaseLiquidity(address _token0, address _token1, uint24 _fee, uint128 _purcentage, bool _rebalance) public returns (uint, uint) { 
+        
         uint _poolNftId = poolNftIds[_token0][_token1][_fee];
         uint _originalNftId = originalPoolNftIds[_token0][_token1][_fee];  
+        
         uint _userNftId = positionsNFT.getUserNftPerPool(msg.sender, _originalNftId);
         uint128 _liquidityToRemove;
-
+        
         if (_rebalance){
             (,,,,,,,uint128 _liquidityInPool,,,, ) = nonfungiblePositionManager.positions(_poolNftId);
             _liquidityToRemove = _liquidityInPool;
@@ -880,6 +609,7 @@ contract YfSc{
             _liquidityToRemove = _userLiqCorrected * _purcentage /100;
             
         }
+        
         uint _amount0Min = 0; uint _amount1Min = 0; 
         // collect the rewards befoore collect decrease liquidity 
         CollectParams memory collectParams;
@@ -887,8 +617,8 @@ contract YfSc{
         collectParams = CollectParams(
                     _poolNftId, 
                     address(this), 
-                    max_collect, 
-                    max_collect); 
+                    1e27, // max_collect
+                    1e27); 
 
         (uint _totalPendingRewards0, uint _totalPendingRewards1) = nonfungiblePositionManager.collect(collectParams);
         
@@ -983,8 +713,8 @@ contract YfSc{
         collectParams = CollectParams(
                     _poolNftId, 
                     address(this), 
-                    max_collect, 
-                    max_collect); 
+                    1e27, // max_collect
+                    1e27); 
         
         (uint _totalCollected0, uint _totalCollected1) = nonfungiblePositionManager.collect(collectParams);
         
@@ -1009,126 +739,4 @@ contract YfSc{
         updateClaimVariables(_originalNftId, _positionRewardToken0, _positionRewardToken1);
     }
 
-    /// @dev Rounds tick down towards negative infinity so that it's a multiple
-    /// of `tickSpacing`.
-    function _floor(int24 tick, int24 tickSpacing) internal view returns (int24) {
-        int24 compressed = tick / tickSpacing;
-        if (tick < 0 && tick % tickSpacing != 0) compressed--;
-        return compressed * tickSpacing;
-    }
-
-    /// @notice Computes the amount of liquidity received for a given amount of token0 and price range
-    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower))
-    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
-    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
-    /// @param amount0 The amount0 being sent in
-    /// @return liquidity The amount of returned liquidity
-    function getLiquidityForAmount0(
-        uint160 sqrtRatioAX96,
-        uint160 sqrtRatioBX96,
-        uint256 amount0
-    ) internal pure returns (uint128 liquidity) {
-        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-        uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
-        return toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
-    }
-
-    /// @notice Computes the maximum amount of liquidity received for a given amount of token0, token1, the current
-    /// pool prices and the prices at the tick boundaries
-    /// @param sqrtRatioX96 A sqrt price representing the current pool prices
-    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
-    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
-    /// @param amount0 The amount of token0 being sent in
-    /// @param amount1 The amount of token1 being sent in
-    /// @return liquidity The maximum amount of liquidity received
-    function getLiquidityForAmounts(
-        uint160 sqrtRatioX96,
-        uint160 sqrtRatioAX96,
-        uint160 sqrtRatioBX96,
-        uint256 amount0,
-        uint256 amount1
-    ) internal pure returns (uint128 liquidity) {
-        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-
-        if (sqrtRatioX96 <= sqrtRatioAX96) {
-            liquidity = getLiquidityForAmount0(sqrtRatioAX96, sqrtRatioBX96, amount0);
-        } else if (sqrtRatioX96 < sqrtRatioBX96) {
-            uint128 liquidity0 = getLiquidityForAmount0(sqrtRatioX96, sqrtRatioBX96, amount0);
-            uint128 liquidity1 = getLiquidityForAmount1(sqrtRatioAX96, sqrtRatioX96, amount1);
-
-            liquidity = liquidity0 < liquidity1 ? liquidity0 : liquidity1;
-        } else {
-            liquidity = getLiquidityForAmount1(sqrtRatioAX96, sqrtRatioBX96, amount1);
-        }
-    }
-
-    /// @notice Computes the amount of liquidity received for a given amount of token1 and price range
-    /// @dev Calculates amount1 / (sqrt(upper) - sqrt(lower)).
-    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
-    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
-    /// @param amount1 The amount1 being sent in
-    /// @return liquidity The amount of returned liquidity
-    function getLiquidityForAmount1(
-        uint160 sqrtRatioAX96,
-        uint160 sqrtRatioBX96,
-        uint256 amount1
-    ) internal pure returns (uint128 liquidity) {
-        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-        return toUint128(FullMath.mulDiv(amount1, FixedPoint96.Q96, sqrtRatioBX96 - sqrtRatioAX96));
-    }
-
-    /// @notice Gets the amount0 delta between two prices
-    /// @dev Calculates liquidity / sqrt(lower) - liquidity / sqrt(upper),
-    /// i.e. liquidity * (sqrt(upper) - sqrt(lower)) / (sqrt(upper) * sqrt(lower))
-    /// @param sqrtRatioAX96 A sqrt price
-    /// @param sqrtRatioBX96 Another sqrt price
-    /// @param liquidity The amount of usable liquidity
-    /// @param roundUp Whether to round the amount up or down
-    /// @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
-    function getAmount0Delta(
-        uint160 sqrtRatioAX96,
-        uint160 sqrtRatioBX96,
-        uint128 liquidity,
-        bool roundUp
-    ) public pure returns (uint256 amount0) {
-        unchecked {
-            if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-
-            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-            uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
-
-            require(sqrtRatioAX96 > 0);
-
-            return
-                roundUp
-                    ? UnsafeMath.divRoundingUp(
-                        FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
-                        sqrtRatioAX96
-                    )
-                    : FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
-        }
-    }
-
-    /// @notice Gets the amount1 delta between two prices
-    /// @dev Calculates liquidity * (sqrt(upper) - sqrt(lower))
-    /// @param sqrtRatioAX96 A sqrt price
-    /// @param sqrtRatioBX96 Another sqrt price
-    /// @param liquidity The amount of usable liquidity
-    /// @param roundUp Whether to round the amount up, or down
-    /// @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
-    function getAmount1Delta(
-        uint160 sqrtRatioAX96,
-        uint160 sqrtRatioBX96,
-        uint128 liquidity,
-        bool roundUp
-    ) public pure returns (uint256 amount1) {
-        unchecked {
-            if (    sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
-
-            return
-                roundUp
-                    ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
-                    : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
-        }
-    }
 }
