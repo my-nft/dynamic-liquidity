@@ -151,7 +151,7 @@ async function main() {
     { gasLimit: '2000000' }
   )
   await tx0.wait()
-
+  
   // const swapParams3 = {
   //   tokenIn: UNI_ADDRESS,
   //   tokenOut: WETH_ADDRESS,
@@ -190,6 +190,22 @@ async function main() {
     { gasLimit: '2000000' }
   )
   await tx110.wait()
+
+  // const public_userLiquidity = await YfScContract.public_userLiquidity();
+  // console.log("public_userLiquidity         : ", public_userLiquidity);
+  
+  // const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  // console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
+
+  // return;
+
+  // const public_userLiquidity = await YfScContract.public_userLiquidity();
+  // console.log("public_userLiquidity         : ", public_userLiquidity);
+  
+  // const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  // console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
+
+  // return;
 
   // const tx10 = await YfScContract.connect(signer2[1]).mintNFT(
   //   UNI_ADDRESS, 
@@ -311,8 +327,9 @@ async function main() {
   // console.log("tickUpper: ", tickUpper);
 
   // var tickLower = await YfScContract.connect(signer2[0]).tickLower();
-  // console.log("tickLower: ", tickLower);
-
+  // console.log("tickLower: ", tickLower); 
+  // 0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0 0x62f77aDEc6273aB0d44Ebb08ea53464abec70A69
+// return;
   const tx02 = await YfScContract.connect(signer2[0]).updatePosition( 
     UNI_ADDRESS, 
     WETH_ADDRESS, 
@@ -322,24 +339,6 @@ async function main() {
     { gasLimit: '2000000' } 
   ) 
   await tx02.wait() 
-
-  const public_amount0 = await YfScContract.public_amount0();
-  console.log("public_amount0        : ", public_amount0);
-  const public_balance0 = await YfScContract.public_balance0();
-  console.log("public_balance0       : ", public_balance0);
-
-  const public_adjustedAmount0 = await YfScContract.public_adjustedAmount0();
-  console.log("public_adjustedAmount0: ", public_adjustedAmount0);
-
-  const public_amount1 = await YfScContract.public_amount1();
-  console.log("public_amount1        : ", public_amount1);
-  const public_balance1 = await YfScContract.public_balance1();
-  console.log("public_balance1       : ", public_balance1);
-
-  const public_adjustedAmount1 = await YfScContract.public_adjustedAmount1();
-  console.log("public_adjustedAmount1: ", public_adjustedAmount1);
-
-  
 
   const tx020 = await YfScContract.connect(signer2[0]).updatePosition( 
     UNI_ADDRESS, 
@@ -351,14 +350,12 @@ async function main() {
   ) 
   await tx020.wait() 
 
-
-
   let _rebalance = false;
   const tx40 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
-    "100", 
+    "50", 
     _rebalance,
     { gasLimit: '1000000' } 
   ) 
@@ -369,33 +366,46 @@ async function main() {
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
-    "100", 
+    "50", 
     _rebalance,
     { gasLimit: '1000000' } 
   ) 
   await tx410.wait() 
 
-  // _rebalance = false;
-  // const tx409 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
-  //   UNI_ADDRESS, 
-  //   WETH_ADDRESS, 
-  //   "3000", 
-  //   "100", 
-  //   _rebalance,
-  //   { gasLimit: '1000000' } 
-  // ) 
-  // await tx409.wait() 
+  _rebalance = false;
+  const tx409 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "100", 
+    _rebalance,
+    { gasLimit: '1000000' } 
+  ) 
+  await tx409.wait() 
 
-  // _rebalance = false;
-  // const tx4109 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
-  //   UNI_ADDRESS, 
-  //   WETH_ADDRESS, 
-  //   "3000", 
-  //   "100", 
-  //   _rebalance,
-  //   { gasLimit: '1000000' } 
-  // ) 
-  // await tx4109.wait() 
+  _rebalance = false;
+  const tx4109 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    "100", 
+    _rebalance,
+    { gasLimit: '1000000' } 
+  ) 
+  await tx4109.wait() 
+
+  const public_userLiquidity = await YfScContract.public_userLiquidity();
+  console.log("public_userLiquidity         : ", public_userLiquidity);
+  
+  const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
+
+
+  // const public_userLiquidity = await YfScContract.public_userLiquidity();
+  // console.log("public_userLiquidity         : ", public_userLiquidity);
+  
+  // const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  // console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
 
   const originalNftId = await YfScContract.originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
 
@@ -410,13 +420,34 @@ async function main() {
     console.log("coef: ", coef);
   }
 
-  const public_userLiquidity = await YfScContract.public_userLiquidity();
-
-  console.log("public_userLiquidity         : ", public_userLiquidity);
+  // const public_userLiquidity = await YfScContract.public_userLiquidity();
+  // console.log("public_userLiquidity         : ", public_userLiquidity);
   
-  const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  // const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  // console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
 
-  console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
+
+  // const public_oldCoef = await YfScContract.public_oldCoef();
+  // console.log("public_oldCoef: ", public_oldCoef);
+
+  // const public_newCoef = await YfScContract.public_newCoef();
+  // console.log("public_newCoef: ", public_newCoef);
+
+  // const public_id_lastUpdate = await YfScContract.public_id_lastUpdate();
+  // console.log("public_id_lastUpdate: ", public_id_lastUpdate);
+
+  // const public_current_id = await YfScContract.public_current_id();
+  // console.log("public_current_id: ", public_current_id);
+
+  // const public_total_states_for_position = await YfScContract.public_total_states_for_position();
+  // console.log("public_total_states_for_position: ", public_total_states_for_position);
+
+
+  // uint128 public public_oldCoef;
+  // uint128 public public_newCoef;
+
+  // uint128 public public_id_lastUpdate;
+  // uint128 public public_current_id;
 
 
   // const public_amount0 = await YfScContract.public_amount0();

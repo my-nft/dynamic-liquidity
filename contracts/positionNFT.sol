@@ -67,7 +67,8 @@ contract PositionsNFT is ERC721, AccessControl {
             uint stateId = statesIdsForPosition[_userPositionNft][_totalStateIdsForPosition];
             return liquidityForUserInPoolAtState[_userPositionNft][stateId];
         }else{
-            for(uint i = _state ; i > 0; i--){
+            for(uint i = _totalStateIdsForPosition ; i > 0; i--){
+                // if (statesIdsForPosition[_userPositionNft][i] <= _state){
                 if (statesIdsForPosition[_userPositionNft][i] <= _state){
                     return liquidityForUserInPoolAtState[_userPositionNft][statesIdsForPosition[_userPositionNft][i]];
                 }
