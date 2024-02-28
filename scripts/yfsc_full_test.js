@@ -10,13 +10,13 @@ MINTER_ROLE = "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a
 const artifacts = {
   NonfungiblePositionManager: require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json"),
   WETH: require("../artifacts/contracts/WETH9.sol/WETH9.json"),
-  UNI: require("../artifacts/contracts/utils.sol/Token.json"),
+  UNI: require("../artifacts/contracts/utils.sol/ERC20.json"),
   YfSc: require("../artifacts/contracts/yfsc.sol/YfSc.json"),
   PositionsNFT: require("../artifacts/contracts/positionNFT.sol/PositionsNFT.json"),
   SwapRouter: require("../artifacts/contracts/ISwapRouter.sol/ISwapRouter.json"),
   UniswapV3Pool: require("../artifacts/contracts/IUniswapV3Pool.sol/IUniswapV3Pool.json"),
   Utils: require("../artifacts/contracts/utils.sol/Utils.json"),
-
+  StatesVariables: require("../artifacts/contracts/StatesVariables.sol/StatesVariables.json"),
 };
 
 // const { ethers } = require("hardhat")
@@ -48,10 +48,11 @@ async function main() {
   let UtilsContract = new ContractFactory(artifacts.Utils.abi, artifacts.Utils.bytecode, signer2[0]);
   UtilsContract = await UtilsContract.deploy(POSITION_MANAGER_ADDRESS);
 
-
   let YfScContract = new ContractFactory(artifacts.YfSc.abi, artifacts.YfSc.bytecode, signer2[0]);
-  YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, ISWAP_ROUTER, UtilsContract.target);
-
+  YfScContract = await YfScContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, UtilsContract.target);
+  
+  let StatesVariableContract = new ContractFactory(artifacts.StatesVariables.abi, artifacts.StatesVariables.bytecode, signer2[0]);
+  StatesVariableContract = await StatesVariableContract.deploy(PositionsNFTContract.target, POSITION_MANAGER_ADDRESS, YfScContract.target, ISWAP_ROUTER);
   // TokenContract = new ContractFactory(artifacts.Token.abi, artifacts.Token.bytecode, signer2[0]);
   // TokenContract = await YfScContract.deploy("Test Token", "TT");
 
@@ -63,10 +64,20 @@ async function main() {
   )
   await tx.wait()
 
+  const tx9 = await PositionsNFTContract.connect(signer2[0]).grantRole(
+    MINTER_ROLE, StatesVariableContract.target,
+    { gasLimit: '1000000' }
+  )
+  await tx9.wait()
 
+  const tx10 = await YfScContract.connect(signer2[0]).setStatesVariables(
+    StatesVariableContract.target,
+    { gasLimit: '1000000' }
+  )
+  await tx10.wait()
   
 
-  const tx001 = await YfScContract.connect(signer2[0]).setInitialTicksForPool(
+  const tx001 = await StatesVariableContract.connect(signer2[0]).setInitialTicksForPool(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
     "3000", 
@@ -109,29 +120,6 @@ async function main() {
   // console.log("uni_balance_pool: ", uni_balance_pool);
 
 
-  // const swapParams0 = {
-  //   tokenOut: WETH_ADDRESS,
-  //   tokenIn: UNI_ADDRESS,
-  //   fee: "3000",
-  //   recipient: signer2[0],
-  //   deadline: "92265983778560",
-  //   amountIn: ethers.parseEther("0.01"),
-  //   amountOutMinimum: "0",
-  //   sqrtPriceLimitX96: "0"
-  // }
-
-  // // await uniContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"));
-  // await wethContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("10"));
-  // console.log("approved");
-
-  // const tx01 = await SwapContract.connect(signer2[0]).exactInputSingle(
-  //       swapParams0,
-  //       { 
-  //           gasLimit: '2000000', 
-  //           // value: ethers.parseEther("10")
-  //       }
-  //   );
-  // await tx01.wait()
   // const uni_balance = await uniContract.balanceOf(signer2[0]);
   // console.log("uni_balance: ", uni_balance);
 
@@ -176,6 +164,31 @@ async function main() {
   // 921758699482278
   // 519594342036717
 
+
+  const swapParams0 = {
+    tokenOut: WETH_ADDRESS,
+    tokenIn: UNI_ADDRESS,
+    fee: "3000",
+    recipient: signer2[0],
+    deadline: "92265983778560",
+    amountIn: ethers.parseEther("0.01"),
+    amountOutMinimum: "0",
+    sqrtPriceLimitX96: "0"
+  }
+
+  // await uniContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"));
+  await wethContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("10"));
+  // console.log("approved");
+
+  const tx01 = await SwapContract.connect(signer2[0]).exactInputSingle(
+        swapParams0,
+        { 
+            gasLimit: '2000000', 
+            // value: ethers.parseEther("10")
+        }
+    );
+  await tx01.wait()
+
   await wethContract.connect(signer2[2]).approve(YfScContract.target, ethers.parseEther("1000"))
   await uniContract.connect(signer2[2]).approve(YfScContract.target, ethers.parseEther("1000"))
 
@@ -190,6 +203,8 @@ async function main() {
     { gasLimit: '2000000' }
   )
   await tx110.wait()
+
+  // return;
 
   // const public_userLiquidity = await YfScContract.public_userLiquidity();
   // console.log("public_userLiquidity         : ", public_userLiquidity);
@@ -281,27 +296,27 @@ async function main() {
   //   );
   // await tx2.wait()
 
-  // const swapParams2 = {
-  //   tokenOut: WETH_ADDRESS,
-  //   tokenIn: UNI_ADDRESS,
-  //   fee: "3000",
-  //   recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
-  //   deadline: "12265983778560",
-  //   amountIn: "14234234234",
-  //   amountOutMinimum: "0",
-  //   sqrtPriceLimitX96: "0"
-  // }
+  const swapParams2 = {
+    tokenOut: WETH_ADDRESS,
+    tokenIn: UNI_ADDRESS,
+    fee: "3000",
+    recipient: "0x80520E99aDD46c642052Ca5B476a1Dd40dB973B0",
+    deadline: "12265983778560",
+    amountIn: "14234234234",
+    amountOutMinimum: "0",
+    sqrtPriceLimitX96: "0"
+  }
 
-  // await wethContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
+  await wethContract.connect(signer2[0]).approve(ISWAP_ROUTER, ethers.parseEther("1000"))
 
-  // const tx21 = await SwapContract.connect(signer2[0]).exactInputSingle(
-  //       swapParams2,
-  //       { 
-  //           gasLimit: '2000000', 
-  //           value: '0'
-  //       }
-  //   );
-  // await tx21.wait()
+  const tx21 = await SwapContract.connect(signer2[0]).exactInputSingle(
+        swapParams2,
+        { 
+            gasLimit: '2000000', 
+            value: '0'
+        }
+    );
+  await tx21.wait()
 
   // const tx3 = await YfScContract.connect(signer2[1]).collect(
   //   UNI_ADDRESS, 
@@ -339,6 +354,8 @@ async function main() {
     { gasLimit: '2000000' } 
   ) 
   await tx02.wait() 
+
+  // return;
 
   const tx020 = await YfScContract.connect(signer2[0]).updatePosition( 
     UNI_ADDRESS, 
@@ -394,11 +411,11 @@ async function main() {
   ) 
   await tx4109.wait() 
 
-  const public_userLiquidity = await YfScContract.public_userLiquidity();
-  console.log("public_userLiquidity         : ", public_userLiquidity);
+  // const public_userLiquidity = await YfScContract.public_userLiquidity();
+  // console.log("public_userLiquidity         : ", public_userLiquidity);
   
-  const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
-  console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
+  // const public_userLiquidityCorrected = await YfScContract.public_userLiquidityCorrected();
+  // console.log("public_userLiquidityCorrected: ", public_userLiquidityCorrected);
 
 
   // const public_userLiquidity = await YfScContract.public_userLiquidity();

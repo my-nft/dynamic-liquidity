@@ -28,6 +28,12 @@ contract PositionsNFT is ERC721, AccessControl {
         _tokenIdCounter.increment(); // to start from 1
     }
 
+    function updateClaimVariables(uint _originalNftId, 
+    uint _claimAmount0, uint _claimAmount1, uint statesCounter) external onlyRole(MINTER_ROLE){
+        uint _positionNftId = getUserNftPerPool(msg.sender, _originalNftId);
+        updateLastClaimForPosition(_positionNftId, statesCounter);
+        updateTotalClaimForPosition(_positionNftId, _claimAmount0, _claimAmount1);
+    }
 
     function safeMint(uint _uniswapNftId, address _receiver, uint128 _liquidity, uint _state) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();

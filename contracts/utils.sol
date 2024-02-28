@@ -1,7 +1,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -63,9 +63,7 @@ struct ExactInputSingleParams {
 }
 
 contract NonfungiblePositionManager {
-
     address public factory;
-
     function mint(MintParams calldata params)
         external
         payable
@@ -75,7 +73,6 @@ contract NonfungiblePositionManager {
             uint256 amount0,
             uint256 amount1
         ){}
-    
     function increaseLiquidity(IncreaseLiquidityParams calldata params)
         external
         payable
@@ -116,10 +113,9 @@ contract NonfungiblePositionManager {
     {}
 }
 
-contract Factory {
-
+interface Factory {
     // mapping(address => mapping(address => mapping(uint24 => address))) public  getPool;
-    function getPool(address _token0, address _token1, uint24 _fee) public returns (address) {}
+    function getPool(address _token0, address _token1, uint24 _fee) external returns (address);
 }
 
 contract Pool {
@@ -146,8 +142,14 @@ contract Pool {
     int24 public tickSpacing;
 }
 
-contract Token is ERC20 ("Test Token", "TT"){
+// contract Token is ERC20 ("Test Token", "TT"){
+// }
 
+interface ERC20{
+    function transfer(address, uint) external;
+    function transferFrom(address, address, uint) external;
+    function approve(address, uint) external;
+    function balanceOf(address) external returns(uint);
 }
 
 contract Utils {
