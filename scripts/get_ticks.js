@@ -1,6 +1,6 @@
 const { Contract } = require("ethers");
 const { getAddresses, artifacts } = require("./addresses.js");
-const { get_amounts, get_liquidity } = require('./core.js');
+// const { get_amounts, get_liquidity } = require('./core.js');
 const {getAmountsForLiquidityRange, tickMath} = require('@thanpolas/univ3prices');
 
 
@@ -77,13 +77,13 @@ async function main() {
   console.log(`Token 0 decimals:${token0Decimals}| Token 1 decimals :${token1Decimals}`);
 
   // Not 100% precise
-  const [amount0, amount1] = get_amounts(
-    currentPrice, newPriceLower, newPriceUpper,
-    Number(liquidity) * Number(0.0001),
-    Number(token0Decimals),
-    Number(token1Decimals)
-  );
-  console.log(`amount 0 :${amount0}| amount 1 :${amount1}`);
+  // const [amount0, amount1] = get_amounts(
+  //   currentPrice, newPriceLower, newPriceUpper,
+  //   Number(liquidity) * Number(0.0001),
+  //   Number(token0Decimals),
+  //   Number(token1Decimals)
+  // );
+  // console.log(`amount 0 :${amount0}| amount 1 :${amount1}`);
 
   // 100% precise
   let sqrtPriceX96 = slot0.sqrtPriceX96.toString()
