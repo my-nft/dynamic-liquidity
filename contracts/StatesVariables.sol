@@ -155,7 +155,7 @@ contract StatesVariables {
         tickUpper = _tick;
     }
 
-    function getPoolUpdateStateId(uint _nft, uint _state) public returns (uint) {
+    function getPoolUpdateStateId(uint _nft, uint _state) public view returns (uint) {
         return poolUpdateStateId[_nft][_state];
     }
 
@@ -163,7 +163,7 @@ contract StatesVariables {
         poolUpdateStateId[_nft][_state] = _glogalState;
     }
 
-    function getLiquidityChangeCoef(uint _nft, uint _state) public returns (uint) {
+    function getLiquidityChangeCoef(uint _nft, uint _state) public view returns (uint) {
         return liquidityChangeCoef[_nft][_state];
     }
 
@@ -172,7 +172,7 @@ contract StatesVariables {
     }
     ///
 
-    function getTotalStatesForNft(uint _nft) public returns (uint) {
+    function getTotalStatesForNft(uint _nft) public view returns (uint) {
         return totalStatesForNft[_nft];
     }
 
@@ -244,7 +244,7 @@ contract StatesVariables {
             _token1, 
             _fee, 
             address(this), 
-            block.timestamp + deadline,
+            // block.timestamp + deadline,
             half,
             0,
             0
@@ -291,7 +291,6 @@ contract StatesVariables {
         if (_rebalance) {
             uint128 _liquidityBefore = getTotalLiquidityAtStateForPosition(_originalNftId, getStatesCounter() - 1);
             
-
             uint128 changeCoef;
             changeCoef = (oldLiquidityChangeCoef * _newLiquidity) / _liquidityBefore;
 
@@ -300,26 +299,23 @@ contract StatesVariables {
 
             return;
         }
-
-        uint _userNftId = positionsNFT.getUserNftPerPool(_user, _originalNftId);
-
         
+        uint _userNftId = positionsNFT.getUserNftPerPool(_user, _originalNftId);
 
         if(oldLiquidityChangeCoef == 0) oldLiquidityChangeCoef = 1000000;
 
         setLiquidityChangeCoef(_originalNftId,getStatesCounter(), oldLiquidityChangeCoef);
-
-        
 
         // liquidityLastDepositTime[_userNftId] = block.timestamp;
         setLiquidityLastDepositTime(_userNftId, block.timestamp);
         uint128 _previousLiq = getTotalLiquidityAtStateForPosition(_originalNftId, getStatesCounter() - 1);
         
         uint128 _changeCoefForLastLiquidity = getChangeCoefSinceLastUserUpdate(_originalNftId, _userNftId, 1);
-
+        
         uint128 _previousLiqCorrected = _previousLiq;
         
         uint lastLiquidityUpdateStateForPosition = positionsNFT.totalStatesForPosition(_userNftId);
+        
         uint userPositionLastUpdateState = 
         positionsNFT.getStatesIdsForPosition(_userNftId, lastLiquidityUpdateStateForPosition-1);
         
@@ -340,20 +336,45 @@ contract StatesVariables {
     }
 
     function getChangeCoefSinceLastUserUpdate(uint _originalNftId, uint _userNftId, uint correction) 
-    public returns(uint128){
+    public view returns(uint128){
+        
         uint _totalPoolUpdates = getTotalStatesForNft(_originalNftId) ;
         if (_totalPoolUpdates < 1){
                 return 1000000 ;
         }
+        
         uint128 lastTicksUpdate = (uint128)(getPoolUpdateStateId(_originalNftId,_totalPoolUpdates));
+        
         uint llustfp = positionsNFT.totalStatesForPosition(_userNftId);
+        
         uint userPositionLastUpdateState = positionsNFT.getStatesIdsForPosition(_userNftId, llustfp - correction);
+        
         if (userPositionLastUpdateState < 1){
                 return 1000000 ;    
         }
+        
+        if(getLiquidityChangeCoef(_originalNftId,userPositionLastUpdateState) == 0) return 1000000;
+        if(getLiquidityChangeCoef(_originalNftId,lastTicksUpdate) == 0) return 1000000;
+
+        
         return (uint128)(1000000*
         (uint128)(getLiquidityChangeCoef(_originalNftId,lastTicksUpdate)))/
         (uint128)(getLiquidityChangeCoef(_originalNftId,userPositionLastUpdateState));
     }
 
+    function updateStateCounters(uint _originalNftId, uint _userNftId, address sender) public {
+        setTotalStatesForNft(_originalNftId, getTotalStatesForNft(_originalNftId) +1);
+        setStatesCounter(getStatesCounter() + 1);
+        setStatesIdsForNft(_originalNftId, getTotalStatesForNft(_originalNftId), getStatesCounter());
+
+        if(_userNftId == 0) return; 
+        uint positionNftId = positionsNFT.getUserNftPerPool(sender, _originalNftId);
+        positionsNFT.updateStatesIdsForPosition(positionNftId, getStatesCounter());  
+
+        uint _totalStates = getTotalStatesForNft(_originalNftId) - 1;
+        uint _stateId = getStatesIdsForNft(_originalNftId,_totalStates);
+        uint oldLiquidityChangeCoef = getLiquidityChangeCoef(_originalNftId,_stateId);
+        setPoolUpdateStateId(_originalNftId, getTotalStatesForNft(_originalNftId), getStatesCounter());
+        // return;
+    }
 }
