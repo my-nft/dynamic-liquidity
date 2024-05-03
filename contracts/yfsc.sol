@@ -23,11 +23,11 @@ interface StatesVariables {
     function getStatesIdsForNft(uint _nft, uint _stateId) external view returns (uint);
     function setStatesIdsForNft(uint _nft, uint _stateId, uint _state) external;
     function getTotalLiquidityAtStateForPosition(uint _position, uint _state) external view returns(uint128);
-    function getTotalStatesForNft(uint _nft) external returns (uint);
+    function getTotalStatesForNft(uint _nft) external view  returns (uint);
     function setTotalStatesForNft(uint _nft, uint _totalStates) external returns(uint);
-    function getLiquidityChangeCoef(uint _nft, uint _state) external returns (uint) ;
+    function getLiquidityChangeCoef(uint _nft, uint _state) external  view  returns (uint) ;
     function setLiquidityChangeCoef(uint _nft, uint _state, uint _coef) external returns(uint);
-    function getPoolUpdateStateId(uint _nft, uint _state) external returns (uint) ;
+    function getPoolUpdateStateId(uint _nft, uint _state) external view returns (uint) ;
     function setPoolUpdateStateId(uint _nft, uint _state, uint _glogalState) external returns(uint);
 
     function getTickLower() external view returns (int24) ;
@@ -390,7 +390,7 @@ contract YfSc{
         // require(sv.getTicksUp(_token0, _token1, _fee) > 0, "pool not initialized yet");
         
         (uint160 sqrtRatioX96, uint160 sqrtRatioAX96, uint160 sqrtRatioBX96, uint160 sqrtPriceX96) = sv.sqrtRatios(_token0, _token1, _fee);
-        
+        // return;
         (_amount0, _amount1) = utils.liquidityAmounts(_amount0, _amount1, sqrtRatioX96, sqrtPriceX96, sqrtRatioAX96, sqrtRatioBX96);
         
         token0.transferFrom(msg.sender, address(this), _amount0);
@@ -399,10 +399,11 @@ contract YfSc{
         token0.approve(address(npm), _amount0);
         token1.approve(address(npm), _amount1);
         
-        
         ISwapRouter.ExactInputSingleParams memory _exactInputSingleParams;
 
         uint128 _newLiquidity;
+
+        
         
         if(poolNftIds[_token0][_token1][_fee] == 0)
         {
@@ -508,7 +509,10 @@ contract YfSc{
         uint userLastClaim = positionsNFT.lastClaimForPosition(_originalNftId);
         uint userTotalStates = positionsNFT.totalStatesForPosition(_userPositionNft); 
         // uint lastStateId = positionsNFT.statesIdsForPosition(_userPositionNft, userTotalStates > 0 ? userTotalStates - 1 : 0);
-        uint lastStateId = positionsNFT.statesIdsForPosition(_userPositionNft, userTotalStates );
+        if (userTotalStates > 0){
+            userTotalStates = userTotalStates - 1;
+        }
+        uint lastStateId = positionsNFT.statesIdsForPosition(_userPositionNft, userTotalStates);
         
         uint totalRewardToken0 = sv.getRewardAtStateForNftToken0(_originalNftId, sv.getStatesCounter());
         uint totalRewardToken1 = sv.getRewardAtStateForNftToken1(_originalNftId, sv.getStatesCounter());
@@ -519,7 +523,7 @@ contract YfSc{
         
         uint totalRewardLastStateToken0 = sv.getRewardAtStateForNftToken0(_originalNftId, lastStateId);
         uint totalRewardLastStateToken1 = sv.getRewardAtStateForNftToken1(_originalNftId, lastStateId);
-
+        // return(0, 100);
         // return(totalRewardToken0, totalRewardToken1);
         uint totalToken0 = totalRewardToken0 - totalRewardLastStateToken0;
         uint totalToken1 = totalRewardToken1 - totalRewardLastStateToken1;
@@ -594,7 +598,7 @@ contract YfSc{
         }
 
         // uint _state = sv.getStatesCounter() > _statesIncrease ? (sv.getStatesCounter() - _statesIncrease) : 0;
-
+        
         sv.updateRewardVariables(_originalNftId, 
         sv.getRewardAtStateForNftToken0(_originalNftId, sv.getStatesCounter() - _statesIncrease) + _reward0, 
         sv.getRewardAtStateForNftToken1(_originalNftId, sv.getStatesCounter() - _statesIncrease) + _reward1, 
@@ -614,15 +618,19 @@ contract YfSc{
         getPendingrewardForPosition(_token0, _token1, _fee);
         uint _fee;
         uint _reward;
-        
+
+        // token1.transfer(msg.sender, 100);
+
         // return;
         if ( _positionRewardToken0 > 0){
+            // token0.transfer(msg.sender, _positionRewardToken0); 
             uint _total0 = (_totalCollected0 + _positionRewardToken0)  ;
-            _fee = (_positionRewardToken0* ownerFee)/ feePrecision;
+            _fee = (_positionRewardToken0 * ownerFee)/ feePrecision;
             _reward = (_total0) - _fee;
             token0.transfer(msg.sender, _reward); 
         }
         if (_positionRewardToken1 > 0){
+            // token1.transfer(msg.sender, _positionRewardToken1);
             uint _total1 = (_totalCollected1 + _positionRewardToken1);
             _fee = (_positionRewardToken1* ownerFee)/ feePrecision;
             _reward = (_positionRewardToken1) - _fee;

@@ -131,7 +131,7 @@ async function main() {
   let deadline = Math.floor(Date.now() / 1000) + (60 * 10); 
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
   console.log("statesCounter starting: ", statesCounter);
-
+  
   const tx0 = await YfScContract.connect(signer2[1]).mintNFT(
     UNI_ADDRESS, 
     WETH_ADDRESS, 
@@ -266,24 +266,45 @@ async function main() {
 
   // return; 
 
-  const tx020 = await YfScContract.connect(signer2[0]).updatePosition( 
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000",  
-    "2",
-    "2",
-    { gasLimit: '2000000' } 
-  ) 
-  await tx020.wait() 
+  // const tx020 = await YfScContract.connect(signer2[0]).updatePosition( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000",  
+  //   "2",
+  //   "2",
+  //   { gasLimit: '2000000' } 
+  // ) 
+  // await tx020.wait() 
+
+// statesCounter starting:  0n
+// statesCounter mint 1:  1n
+// statesCounter mint 2:  2n
+// statesCounter update 01:  2n
+// pendingReward0:  Result(2) [ 0n, 0n ]
+// pendingReward1:  Result(2) [ 0n, 0n ]
+// originalPoolNftIds:  11760n
+// rewardToken0_1:  0n
+// rewardToken0_2:  0n
+// rewardToken0_3:  0n
+// rewardToken0_4:  0n
+// rewardToken1_1:  0n
+// rewardToken1_2:  0n
+// rewardToken1_3:  5339287n
+// rewardToken1_4:  5339287n
+
+// pending rewards not calculated correctly
+// 0 if no update 
+// wrong values if updates 
 
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
   console.log("statesCounter update 01: ", statesCounter);
 
-  var pendingReward0 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(
-    UNI_ADDRESS, WETH_ADDRESS, "3000");
-  var pendingReward1 = await YfScContract.connect(signer2[2]).getPendingrewardForPosition(
-    UNI_ADDRESS, WETH_ADDRESS, "3000");
 
+
+  // console.log("balance token0: ", await uniContract.connect(signer2[0]).balanceOf(YfScContract.target));
+  // console.log("balance token1: ", await wethContract.connect(signer2[0]).balanceOf(YfScContract.target));
+    
+  let rebalance = false;
   let external = true;
   const tx3 = await YfScContract.connect(signer2[1]).collect( 
     UNI_ADDRESS, 
@@ -291,11 +312,71 @@ async function main() {
     "3000", 
     0, 
     0, 
-    external, 
+    rebalance, 
+    external,
     { gasLimit: '2000000' } 
   ) 
   await tx3.wait() 
+  const tx31 = await YfScContract.connect(signer2[2]).collect( 
+    UNI_ADDRESS, 
+    WETH_ADDRESS, 
+    "3000", 
+    0, 
+    0, 
+    rebalance, 
+    external,
+    { gasLimit: '2000000' } 
+  ) 
+  await tx31.wait() 
+  var pendingReward0 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(
+    UNI_ADDRESS, WETH_ADDRESS, "3000");
+  var pendingReward1 = await YfScContract.connect(signer2[2]).getPendingrewardForPosition(
+    UNI_ADDRESS, WETH_ADDRESS, "3000");
+  console.log("pendingReward0: ", pendingReward0);
+  console.log("pendingReward1: ", pendingReward1);
 
+  let originalPoolNftIds = await YfScContract.connect(signer2[0]).
+  originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000");
+  console.log("originalPoolNftIds: ", originalPoolNftIds);
+  var rewardToken0_1 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken0(originalPoolNftIds, 1);
+  var rewardToken0_2 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken0(originalPoolNftIds, 2);
+  var rewardToken0_3 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken0(originalPoolNftIds, 3);
+  var rewardToken0_4 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken0(originalPoolNftIds, 4);
+
+  console.log("rewardToken0_1: ", rewardToken0_1);
+  console.log("rewardToken0_2: ", rewardToken0_2);
+  console.log("rewardToken0_3: ", rewardToken0_3);
+  console.log("rewardToken0_4: ", rewardToken0_4);
+  
+  var rewardToken1_1 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken1(originalPoolNftIds, 1);
+  var rewardToken1_2 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken1(originalPoolNftIds, 2);
+  var rewardToken1_3 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken1(originalPoolNftIds, 3);
+  var rewardToken1_4 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken1(originalPoolNftIds, 4);
+  var rewardToken1_5 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken1(originalPoolNftIds, 5);
+  var rewardToken1_6 = await StatesVariableContract.connect(signer2[1]).
+  getRewardAtStateForNftToken1(originalPoolNftIds, 6);
+  
+  console.log("rewardToken1_1: ", rewardToken1_1);
+  console.log("rewardToken1_2: ", rewardToken1_2);
+  console.log("rewardToken1_3: ", rewardToken1_3);
+  console.log("rewardToken1_4: ", rewardToken1_4);
+  console.log("rewardToken1_5: ", rewardToken1_5);
+  console.log("rewardToken1_6: ", rewardToken1_6);
+
+  console.log("balance token0: ", await uniContract.connect(signer2[0]).balanceOf(YfScContract.target));
+  console.log("balance token1: ", await wethContract.connect(signer2[0]).balanceOf(YfScContract.target));
+  var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
+  console.log("statesCounter collect 1: ", statesCounter);
+  return;
   const swapParams219 = {
     tokenOut: UNI_ADDRESS,
     tokenIn: WETH_ADDRESS,
@@ -331,10 +412,9 @@ async function main() {
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
   console.log("statesCounter collect 2: ", statesCounter);
 
-  console.log("pendingReward0: ", pendingReward0);
-  console.log("pendingReward1: ", pendingReward1);
 
-  let originalPoolNftIds = await YfScContract.connect(signer2[0]).originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000");
+
+  originalPoolNftIds = await YfScContract.connect(signer2[0]).originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000");
   console.log("originalPoolNftIds: ", originalPoolNftIds);
   var rewardToken0_1 = await StatesVariableContract.connect(signer2[1]).
   getRewardAtStateForNftToken0(originalPoolNftIds, 1);
@@ -345,13 +425,11 @@ async function main() {
   var rewardToken0_4 = await StatesVariableContract.connect(signer2[1]).
   getRewardAtStateForNftToken0(originalPoolNftIds, 4);
 
-
   console.log("rewardToken0_1: ", rewardToken0_1);
   console.log("rewardToken0_2: ", rewardToken0_2);
   console.log("rewardToken0_3: ", rewardToken0_3);
   console.log("rewardToken0_4: ", rewardToken0_4);
   
-
   var rewardToken1_1 = await StatesVariableContract.connect(signer2[1]).
   getRewardAtStateForNftToken1(originalPoolNftIds, 1);
   var rewardToken1_2 = await StatesVariableContract.connect(signer2[1]).
@@ -361,7 +439,6 @@ async function main() {
   var rewardToken1_4 = await StatesVariableContract.connect(signer2[1]).
   getRewardAtStateForNftToken1(originalPoolNftIds, 4);
   
-
   console.log("rewardToken1_1: ", rewardToken1_1);
   console.log("rewardToken1_2: ", rewardToken1_2);
   console.log("rewardToken1_3: ", rewardToken1_3);

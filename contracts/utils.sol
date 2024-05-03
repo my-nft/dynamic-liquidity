@@ -149,7 +149,7 @@ interface ERC20{
     function transfer(address, uint) external;
     function transferFrom(address, address, uint) external;
     function approve(address, uint) external;
-    function balanceOf(address) external returns(uint);
+    function balanceOf(address) external view returns(uint);
 }
 
 contract Utils {
