@@ -145,7 +145,6 @@ async function main() {
   await tx0.wait()
 
   // return;
-
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
   console.log("statesCounter mint 1: ", statesCounter);
 
@@ -161,8 +160,6 @@ async function main() {
     "3000", 
     "735101909",
     "2000000000000", 
-    // "1",
-    // "2",
     { gasLimit: '2000000' }
   )
   await tx110.wait()
@@ -376,7 +373,7 @@ async function main() {
   console.log("balance token1: ", await wethContract.connect(signer2[0]).balanceOf(YfScContract.target));
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
   console.log("statesCounter collect 1: ", statesCounter);
-  return;
+  // return;
   const swapParams219 = {
     tokenOut: UNI_ADDRESS,
     tokenIn: WETH_ADDRESS,
@@ -412,7 +409,7 @@ async function main() {
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
   console.log("statesCounter collect 2: ", statesCounter);
 
-
+  
 
   originalPoolNftIds = await YfScContract.connect(signer2[0]).originalPoolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000");
   console.log("originalPoolNftIds: ", originalPoolNftIds);
@@ -447,25 +444,19 @@ async function main() {
 
   var statesCounter = await StatesVariableContract.connect(signer2[0]).getStatesCounter();
 
-  var public_reward_0 = await YfScContract.connect(signer2[0]).public_reward_0();
-  var public_reward_1 = await YfScContract.connect(signer2[0]).public_reward_1();
-  
-  console.log("public_reward_0: ", public_reward_0);
-  console.log("public_reward_1: ", public_reward_1);
-  
   console.log("statesCounter: ", statesCounter);
   // return;
 
   let _rebalance = false;
-  const tx40 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000", 
-    "50", 
-    _rebalance,
-    { gasLimit: '1000000' } 
-  ) 
-  await tx40.wait() 
+  // const tx40 = await YfScContract.connect(signer2[2]).decreaseLiquidity( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "50", 
+  //   _rebalance,
+  //   { gasLimit: '1000000' } 
+  // ) 
+  // await tx40.wait() 
 
   var rewardToken0_5 = await StatesVariableContract.connect(signer2[1]).
   getRewardAtStateForNftToken0(originalPoolNftIds, 5);
@@ -481,15 +472,15 @@ async function main() {
   console.log("statesCounter decrease liquidity 01 : ", statesCounter);
 
   _rebalance = false;
-  const tx410 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
-    UNI_ADDRESS, 
-    WETH_ADDRESS, 
-    "3000", 
-    "50", 
-    _rebalance,
-    { gasLimit: '1000000' } 
-  ) 
-  await tx410.wait() 
+  // const tx410 = await YfScContract.connect(signer2[1]).decreaseLiquidity( 
+  //   UNI_ADDRESS, 
+  //   WETH_ADDRESS, 
+  //   "3000", 
+  //   "50", 
+  //   _rebalance,
+  //   { gasLimit: '1000000' } 
+  // ) 
+  // await tx410.wait() 
 
   var rewardToken0_6 = await StatesVariableContract.connect(signer2[1]).
   getRewardAtStateForNftToken0(originalPoolNftIds, 6);
@@ -553,8 +544,6 @@ async function main() {
   console.log("statesCounter decrease liquidity 04 : ", statesCounter);
 
   const poolNftIds = await YfScContract.poolNftIds(UNI_ADDRESS, WETH_ADDRESS, "3000")
-
-  console.log("poolNftIds: ", poolNftIds);
 
   // const tx020 = await YfScContract.connect(signer2[0]).withdraw( 
   //   UNI_ADDRESS, 
