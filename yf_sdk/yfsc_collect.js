@@ -14,12 +14,14 @@ async function main() {
     const provider = ethers.provider
     const signer_address = await signer2[0].getAddress()
     const network = hre.network.name
+    const user_address = await signer2[1].getAddress()
 
     console.log("Network: ", network);
     console.log("Token0 : ", t0);
     console.log("Token1 : ", t1);
     console.log("FeeTier: ", feeTier);
     console.log("Signer : ", signer_address);
+    console.log("User   : ", user_address);
     console.log("")
 
     const token1_Contract  = new Contract(addresses[t1], artifacts[t1].abi, provider)
@@ -30,21 +32,39 @@ async function main() {
     let rebalance = false;
     let external  = true;
 
-    const balanceToken1_before = await token1_Contract.connect(signer2[2]).balanceOf(signer_address);
-    const balanceToken0_before = await token0_Contract.connect(signer2[2]).balanceOf(signer_address);
+    console.log("")
+    const YfScContract_balanceToken0_before = await token0_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
+    const YfScContract_balanceToken1_before = await token1_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
 
-    console.log("Token1 balance before collecting: ", ethers.utils.formatEther(balanceToken1_before));
-    console.log("Token0 balance before collecting: ", ethers.utils.formatEther(balanceToken0_before));
+    const user_balanceToken0_before = await token0_Contract.connect(signer2[0]).balanceOf(user_address);
+    const user_balanceToken1_before = await token1_Contract.connect(signer2[0]).balanceOf(user_address);
 
-    const tx4 = await YfScContract.connect(signer2[2]).collect(addresses[t0], addresses[t1], feeTier,
-        0, 0, external, {gasLimit: '2000000'})
-    await tx4.wait()
+    console.log("YfScContract balance token0 before mint: ", ethers.formatEther(YfScContract_balanceToken0_before));
+    console.log("YfScContract balance token1 before mint: ", ethers.formatEther(YfScContract_balanceToken1_before));
+    console.log("User balance token0 before mint        : ", ethers.formatEther(user_balanceToken0_before));
+    console.log("User balance token1 before mint        : ", ethers.formatEther(user_balanceToken1_before));
+    console.log("")
+    console.log("")
 
-    const balanceToken1_after = await token1_Contract.connect(signer2[2]).balanceOf(signer_address);
-    const balanceToken0_after = await token0_Contract.connect(signer2[2]).balanceOf(signer_address);
+    console.log("Collecting rewards for user : ", user_address)
+    const tx = await YfScContract.connect(signer2[1]).collect(addresses[t0], addresses[t1], feeTier,
+      0, 0, rebalance, external, {gasLimit: '2000000'})
+    await tx.wait()
+    console.log("Collecting rewards with tx: ", tx.hash);
 
-    console.log("Token1 balance after collecting: ", ethers.utils.formatEther(balanceToken1_after));
-    console.log("Token0 balance after collecting: ", ethers.utils.formatEther(balanceToken0_after));
+    console.log("")
+    const YfScContract_balanceToken0_after = await token0_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
+    const YfScContract_balanceToken1_after = await token1_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
+
+    const user_balanceToken0_after = await token0_Contract.connect(signer2[0]).balanceOf(user_address);
+    const user_balanceToken1_after = await token1_Contract.connect(signer2[0]).balanceOf(user_address);
+
+    console.log("YfScContract balance token0 after mint: ", ethers.formatEther(YfScContract_balanceToken0_after));
+    console.log("YfScContract balance token1 after mint: ", ethers.formatEther(YfScContract_balanceToken1_after));
+    console.log("User balance token0 after mint        : ", ethers.formatEther(user_balanceToken0_after));
+    console.log("User balance token1 after mint        : ", ethers.formatEther(user_balanceToken1_after));
+    console.log("")
+    console.log("")
 }
 // npx hardhat run --network sepolia yf_sdk/yfsc_collect.js
 

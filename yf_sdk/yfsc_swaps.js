@@ -14,12 +14,14 @@ async function main() {
     const provider = ethers.provider
     const signer_address = await signer2[0].getAddress()
     const network = hre.network.name
+    const user_address = await signer2[1].getAddress()
 
     console.log("Network: ", network);
     console.log("Token0 : ", t0);
     console.log("Token1 : ", t1);
     console.log("FeeTier: ", feeTier);
     console.log("Signer : ", signer_address);
+    console.log("User   : ", user_address);
     console.log("")
 
     const SwapContract = new Contract(addresses['ISWAP_ROUTER'], artifacts.SwapRouter.abi, provider)

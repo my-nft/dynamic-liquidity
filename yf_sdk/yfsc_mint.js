@@ -14,12 +14,14 @@ async function main() {
   const provider = ethers.provider
   const signer_address = await signer2[0].getAddress()
   const network = hre.network.name
+  const user_address = await signer2[1].getAddress()
 
   console.log("Network: ", network);
   console.log("Token0 : ", t0);
   console.log("Token1 : ", t1);
   console.log("FeeTier: ", feeTier);
   console.log("Signer : ", signer_address);
+  console.log("User   : ", user_address);
   console.log("")
 
   const token1_Contract  = new Contract(addresses[t1], artifacts[t1].abi, provider)
@@ -43,8 +45,8 @@ async function main() {
   const YfScContract_balanceToken0_before = await token0_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
   const YfScContract_balanceToken1_before = await token1_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
 
-  const user_balanceToken0_before = await token0_Contract.connect(signer2[0]).balanceOf(signer2[1].address);
-  const user_balanceToken1_before = await token1_Contract.connect(signer2[0]).balanceOf(signer2[1].address);
+  const user_balanceToken0_before = await token0_Contract.connect(signer2[0]).balanceOf(user_address);
+  const user_balanceToken1_before = await token1_Contract.connect(signer2[0]).balanceOf(user_address);
 
   console.log("YfScContract balance token0 before mint: ", ethers.formatEther(YfScContract_balanceToken0_before));
   console.log("YfScContract balance token1 before mint: ", ethers.formatEther(YfScContract_balanceToken1_before));
@@ -54,23 +56,23 @@ async function main() {
   console.log("")
 
 
-  console.log("Minting NFT ...")
-  const tx0 = await YfScContract.connect(signer2[1]).mintNFT(
+  console.log("Minting NFT for user : ", user_address)
+  const tx = await YfScContract.connect(signer2[1]).mintNFT(
     addresses[t0],
       addresses[t1], 
       feeTier,
       "5351019098",
       "1000000000000",
       { gasLimit: '2000000' })
-  console.log("NFT minted with tx: ", tx0.hash);
-  await tx0.wait()
+  console.log("NFT minted with tx: ", tx.hash);
+  await tx.wait()
 
   console.log("")
   const YfScContract_balanceToken0_after = await token0_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
   const YfScContract_balanceToken1_after = await token1_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
 
-  const user_balanceToken0_after = await token0_Contract.connect(signer2[0]).balanceOf(signer2[1].address);
-  const user_balanceToken1_after = await token1_Contract.connect(signer2[0]).balanceOf(signer2[1].address);
+  const user_balanceToken0_after = await token0_Contract.connect(signer2[0]).balanceOf(user_address);
+  const user_balanceToken1_after = await token1_Contract.connect(signer2[0]).balanceOf(user_address);
 
   console.log("YfScContract balance token0 after mint: ", ethers.formatEther(YfScContract_balanceToken0_after));
   console.log("YfScContract balance token1 after mint: ", ethers.formatEther(YfScContract_balanceToken1_after));
