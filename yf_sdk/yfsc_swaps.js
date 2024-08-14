@@ -27,11 +27,11 @@ async function main() {
     const token1_Contract  = new Contract(addresses[t1], artifacts[t1].abi, provider)
     const token0_Contract  = new Contract(addresses[t0], artifacts[t0].abi, provider)
 
-    console.log("Approving ...")
-    const a1 = await yf.approveIfNeeded(token1_Contract, signer2[0], addresses['YF_SC'], ethers.parseEther("1000"));
-    const a0 = await yf.approveIfNeeded(token0_Contract, signer2[0], addresses['YF_SC'], ethers.parseEther("1000"));
-    console.log("Approved")
-    console.log("")
+    // console.log("Approving ...")
+    // const a1 = await yf.approveIfNeeded(token1_Contract, signer2[0], addresses['YF_SC'], ethers.parseEther("1000"));
+    // const a0 = await yf.approveIfNeeded(token0_Contract, signer2[0], addresses['YF_SC'], ethers.parseEther("1000"));
+    // console.log("Approved")
+    // console.log("")
 
     // await token1_Contract.connect(signer2[2]).approve(addresses['YF_SC'], ethers.parseEther("1000"));
     // await token0_Contract.connect(signer2[2]).approve(addresses['YF_SC'], ethers.parseEther("1000"));

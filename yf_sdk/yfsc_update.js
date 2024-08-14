@@ -14,21 +14,21 @@ async function main() {
   const signer_address = await signer2[0].getAddress()
   const network = hre.network.name
 
-  console.log("network: ", network);
-  console.log("Token0: ", t0);
-  console.log("Token1: ", t1);
-  console.log("feeTier: ", feeTier);
-  console.log("signer:", signer_address);
+  console.log("Network: ", network);
+  console.log("Token0 : ", t0);
+  console.log("Token1 : ", t1);
+  console.log("FeeTier: ", feeTier);
+  console.log("Signer : ", signer_address);
   console.log("")
 
   const YfScContract = new Contract(addresses['YF_SC'], artifacts['YfSc'].abi, provider);
 
-  const ticks_upper = "3"
-  const ticks_lower = "3"
+  const ticks_upper = "10"
+  const ticks_lower = "10"
 
   console.log("Updating Upper ticks to +", ticks_upper, "to current price")
   console.log("Updating Lower ticks to -", ticks_lower, "to current price")
-  
+
   const tx02 = await YfScContract.connect(signer2[0]).updatePosition(
     addresses[t0],
     addresses[t1],
@@ -37,6 +37,7 @@ async function main() {
     ticks_lower, 
     {gasLimit: '2000000'})
   await tx02.wait()
+  console.log("Position updated with tx: ", tx02.hash);
 
 }
 // npx hardhat run --network sepolia more_scripts/yfsc_update.js

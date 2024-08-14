@@ -74,7 +74,7 @@ async function main() {
   console.log("")
 
 
-  const token1_Contract = new Contract(addresses[t1], artifacts[t1].abi, provider)
+  const token1_Contract  = new Contract(addresses[t1], artifacts[t1].abi, provider)
   const token0_Contract  = new Contract(addresses[t0], artifacts[t0].abi, provider)
 
   await token1_Contract.connect(signer2[1]).approve(YfScContract.target, ethers.parseEther("1000"));
@@ -184,8 +184,8 @@ async function main() {
   const balanceToken0 = await token0_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
   const balanceToken1 = await token1_Contract.connect(signer2[0]).balanceOf(YfScContract.target);
 
-  console.log("balance token0: ", ethers.utils.formatEther(balanceToken0));
-  console.log("balance token1: ", ethers.utils.formatEther(balanceToken1));
+  console.log("balance token0: ", ethers.formatEther(balanceToken0));
+  console.log("balance token1: ", ethers.formatEther(balanceToken1));
   console.log("")
   console.log("")
 
@@ -201,10 +201,10 @@ async function main() {
   await tx31.wait()
 
   var pendingReward0 = await YfScContract.connect(signer2[1]).getPendingrewardForPosition(addresses[t0], addresses[t1], feeTier);
-  console.log("pendingReward0: ", ethers.utils.formatEther(pendingReward0));
+  console.log("pendingReward0: ", ethers.formatEther(pendingReward0));
 
   var pendingReward1 = await YfScContract.connect(signer2[2]).getPendingrewardForPosition(addresses[t0], addresses[t1], feeTier);
-  console.log("pendingReward1: ", ethers.utils.formatEther(pendingReward1));
+  console.log("pendingReward1: ", ethers.formatEther(pendingReward1));
 
   let originalPoolNftIds = await YfScContract.connect(signer2[0]).originalPoolNftIds(addresses[t0], addresses[t1], feeTier);
   console.log("originalPoolNftIds: ", originalPoolNftIds);
@@ -214,10 +214,10 @@ async function main() {
   var rewardToken0_3 = await StatesVariableContract.connect(signer2[1]).getRewardAtStateForNftToken0(originalPoolNftIds, 3);
   var rewardToken0_4 = await StatesVariableContract.connect(signer2[1]).getRewardAtStateForNftToken0(originalPoolNftIds, 4);
 
-  console.log("rewardToken0_1: ", ethers.utils.formatEther(rewardToken0_1));
-  console.log("rewardToken0_2: ", ethers.utils.formatEther(rewardToken0_2));
-  console.log("rewardToken0_3: ", ethers.utils.formatEther(rewardToken0_3));
-  console.log("rewardToken0_4: ", ethers.utils.formatEther(rewardToken0_4));
+  console.log("rewardToken0_1: ", ethers.formatEther(rewardToken0_1));
+  console.log("rewardToken0_2: ", ethers.formatEther(rewardToken0_2));
+  console.log("rewardToken0_3: ", ethers.formatEther(rewardToken0_3));
+  console.log("rewardToken0_4: ", ethers.formatEther(rewardToken0_4));
 
   var rewardToken1_1 = await StatesVariableContract.connect(signer2[1]).getRewardAtStateForNftToken1(originalPoolNftIds, 1);
   var rewardToken1_2 = await StatesVariableContract.connect(signer2[1]).getRewardAtStateForNftToken1(originalPoolNftIds, 2);
@@ -226,11 +226,11 @@ async function main() {
   var rewardToken1_5 = await StatesVariableContract.connect(signer2[1]).getRewardAtStateForNftToken1(originalPoolNftIds, 5);
   var rewardToken1_6 = await StatesVariableContract.connect(signer2[1]).getRewardAtStateForNftToken1(originalPoolNftIds, 6);
 
-  console.log("rewardToken1_1: ", ethers.utils.formatEther(rewardToken1_1));
-  console.log("rewardToken1_2: ", ethers.utils.formatEther(rewardToken1_2));
-  console.log("rewardToken1_3: ", ethers.utils.formatEther(rewardToken1_3));
-  console.log("rewardToken1_4: ", ethers.utils.formatEther(rewardToken1_4));
-  console.log("rewardToken1_5: ", ethers.utils.formatEther(rewardToken1_5));
+  console.log("rewardToken1_1: ", ethers.formatEther(rewardToken1_1));
+  console.log("rewardToken1_2: ", ethers.formatEther(rewardToken1_2));
+  console.log("rewardToken1_3: ", ethers.formatEther(rewardToken1_3));
+  console.log("rewardToken1_4: ", ethers.formatEther(rewardToken1_4));
+  console.log("rewardToken1_5: ", ethers.formatEther(rewardToken1_5));
   console.log("rewardToken1_6: ", ethers.utils.formatEther(rewardToken1_6));
 
   console.log("balance token0: ", await token0_Contract.connect(signer2[0]).balanceOf(YfScContract.target));
